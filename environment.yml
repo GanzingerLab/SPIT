@@ -1,0 +1,33 @@
+name: SPIT
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - numpy
+  - pandas
+  - pytables
+  - python=3.7
+  - scikit-learn
+  - scikit-image
+  - fastparquet
+  - trackpy
+  - h5py
+  - pyyaml
+  - pip
+  - seaborn
+  - matplotlib
+  - scipy
+  - dask
+  - hdbscan
+  - tqdm
+  - pyqt
+  - numba
+  - spyder
+  - colorama
+  - jupyterlab
+  - snappy
+  - tifffile
+  - read-roi
+  - pip:
+    - lmfit
+    - sphinx-rtd-theme
