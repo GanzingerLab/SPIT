@@ -19,9 +19,12 @@ SPIT is executable from the command line. The following modules can be either ex
 **Colocalize** - checks for interactions between trajectories </br>
 **FRAP** - performs a FRAP analysis of a SLB </br>
 
-## Examples
+![Diagram explanation of SPIT](/spit_diagram.png?raw=true "Diagram explanation of SPIT")
 
 ## Contributions
+Christian Niederauer
+Miles Wang-Henderson
+Elia Escoffier
 
 ## Citing SPIT
 
