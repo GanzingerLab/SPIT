@@ -22,6 +22,9 @@ SPIT is executable from the command line. The following modules can be either ex
 ![Diagram explanation of SPIT](/spit_diagram.png?raw=true "Diagram explanation of SPIT")
 
 ## Contributions
+Christian Niederauer
+Miles Wang-Henderson
+Elia Escoffier
 
 ## Citing SPIT
 
