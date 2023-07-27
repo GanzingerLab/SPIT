@@ -12,7 +12,7 @@ Single Particle Interaction Tracking (SPIT) is a Python library for single-molec
 
 
 # Usage
-SPIT is executable from the command line. The following modules can be either executed individual, or consecutively:
+SPIT is executable from the command line. The following modules can be either executed individually, or consecutively:
 
 **Localize** - localizes particles in frames </br>
 **Link** - links localizations into trajectories </br>
