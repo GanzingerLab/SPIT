@@ -7,8 +7,7 @@ Single Particle Interaction Tracking (SPIT) is a Python library for single-molec
 4. cd to the local version of the repository create environment `conda env create -f=environment.yml`
 5. activate environment with `activate SPIT`
 6. build package: move to picasso repository and `python setup.py install`
-7. build package: move to picasso_addon repository and `python setup.py install`
-8. build package: move to SPIT repository and `python setup.py install`
+7. build package: move to SPIT repository and `python setup.py install`
 
 
 # Usage
