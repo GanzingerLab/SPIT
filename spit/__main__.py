@@ -156,11 +156,11 @@ def _localize(args):
                     df_locs = df_locs.rename(
                         columns={'frame': 't', 'photons': 'intensity'})
 
-                    # adding localization precision, nearest neighbor, change photons
+                    # adding localization precision, nearest neighbor, change photons, add cell_id column
                     df_locs['loc_precision'] = df_locs[[
                         'lpx', 'lpy']].mean(axis=1)
                     df_locs['nearest_neighbor'] = localize.get_nearest_neighbor(df_locs)
-
+                    df_locs['cell_id'] = 0
                     # correction only makes sense if we are dealing with two/three channel data
                     if args.transform and args.gradient == None:
                         root = __file__
@@ -233,6 +233,278 @@ def _localize(args):
             print(f'\n{skippedPath}\n')
 
     beep(sound=5)
+
+# %% transform
+
+
+def _transform(args):
+    import os
+    from glob import glob
+    import traceback
+    from spit import localize
+    import yaml
+    import pandas as pd
+    from tqdm import tqdm
+    from picasso.io import save_info
+    from spit import tools
+
+    # print params
+    ws = '  '
+    print('Transform - Parameter Settings:')
+    print(f'{"No":<6} | {ws+"Label":<18} | {ws+"Value":<10}')
+    for index, element in enumerate(vars(args)):
+        print(f'{index+1:<6} | {ws+element:<18} | {ws+str(getattr(args,element)):<10}')
+    print('--------------------------------------------------------')
+
+    # format paths according to a specified ending, e.g. "ch2_locs.csv"
+    dirpath = args.files
+    ch0 = args.channel0
+    ch1 = args.channel1  # reference channel
+    ch2 = args.channel2
+
+    # getting all filenames of the first channel, later look for corresponding channel files
+    if os.path.isdir(dirpath):
+        print('Analyzing directory...')
+        if args.recursive == True:
+            pathsCh0 = glob(dirpath + f'//**//*{ch0}*_locs.csv', recursive=True)
+        else:
+            pathsCh0 = glob(dirpath + f'//*{ch0}*_locs.csv', recursive=False)
+
+        print(f'Found {len(pathsCh0)} files for channel 0...')
+
+        # remove filepaths that do match string
+        if args.avoidstring:
+            keptpaths = []
+            for path in pathsCh0:
+                if args.avoidstring not in path:
+                    keptpaths.append(path)
+            pathsCh0 = keptpaths
+
+        # remove filepaths that do not match string
+        if args.matchstring:
+            keptpaths = []
+            for path in pathsCh0:
+                if args.matchstring in path:
+                    keptpaths.append(path)
+            pathsCh0 = keptpaths
+
+        for path in pathsCh0:
+            print(path)
+    else:
+        raise FileNotFoundError('Directory not found')
+    print('--------------------------------------------------------')
+    skippedPaths = []
+    # main loop
+
+    root = __file__
+    root = root.replace("__main__.py", "paramfiles/")
+    naclibCoefficients_path = os.path.join(root, 'naclib_coefficients.csv')
+    naclibCoefficients = pd.read_csv(naclibCoefficients_path)
+    transform_info = {
+        'Transformation parameters': naclibCoefficients_path}
+
+    for idx, pathCh0 in tqdm(enumerate(pathsCh0), desc='Looking for other channels...'):
+        try:
+            # read in the file
+            df_locs_ch0_original, info_ch0 = tools.load_locs(pathCh0)
+            df_locs_ch0, dataset = localize.transform_locs(df_locs_ch0_original,
+                                                           naclibCoefficients,
+                                                           channel=0,
+                                                           fig_size=(682, 682))
+
+            # get right output paths
+            pathOutput = os.path.splitext(
+                pathCh0)[0][:-9] + args.suffix + '_transform'
+
+            infoNew = info_ch0.copy()
+            infoNew.append(transform_info)
+            save_info(pathOutput + '_ch0_locs.yaml', infoNew)
+
+            print('\nSaving transformed localizations...')
+            df_locs_ch0.to_csv(pathOutput + '_ch0_locs.csv', index=False)
+
+            dirname = os.path.dirname(pathCh0)
+
+            pathCh1 = glob(pathCh0.replace('ch0', 'ch1'))
+            pathCh2 = glob(pathCh0.replace('ch0', 'ch2'))
+
+            if len(pathCh1) == 1:
+                print(f'\nFound the reference channel for file {idx}.')
+                df_locs_ch1, info_ch1 = tools.load_locs(pathCh1[0])
+
+                # get right output paths
+                pathOutput = os.path.splitext(
+                    pathCh1[0])[0][:-9] + args.suffix + '_transform'
+                infoNew = info_ch1.copy()
+                infoNew.append(transform_info)
+                save_info(pathOutput + '_ch1_locs.yaml', infoNew)
+
+                print('Saving untransformed localizations...')
+                df_locs_ch1.to_csv(pathOutput + '_ch1_locs.csv', index=False)
+
+            else:
+                print(f'\nFound no reference channel for file {idx}.')
+
+            if len(pathCh2) == 1:
+                print(f'\nFound the third channel for file {idx}.')
+                df_locs_ch2_original, info_ch2 = tools.load_locs(pathCh2[0])
+                df_locs_ch2, dataset = localize.transform_locs(df_locs_ch2_original,
+                                                               naclibCoefficients,
+                                                               channel=2,
+                                                               fig_size=(682, 682))
+                # get right output paths
+                pathOutput = os.path.splitext(
+                    pathCh2[0])[0][:-9] + args.suffix + '_transform'
+
+                infoNew = info_ch2.copy()
+                infoNew.append(transform_info)
+                save_info(pathOutput + '_ch2_locs.yaml', infoNew)
+
+                print('Saving transformed localizations...')
+                df_locs_ch2.to_csv(pathOutput + '_ch2_locs.csv', index=False)
+            else:
+                print(f'\nFound no third channel for file {idx}.')
+
+                print('--------------------------------------------------------')
+
+        except Exception:
+            skippedPaths.append(pathCh0)
+            print('--------------------------------------------------------')
+            print(f'Path {path} could not be analyzed. Skipping...\n')
+            traceback.print_exc()
+
+    print('                                                        ')
+    print('--------------------------------------------------------')
+    print('/////////////////////FINISHED//////////////////////////')
+    print('--------------------------------------------------------')
+    if skippedPaths:
+        print('Skipped paths:')
+        for skippedPath in skippedPaths:
+            print(f'\n{skippedPath}\n')
+
+# %% roi
+
+
+def _roi(args):
+    '''Restrict localizations to ROIs'''
+    import os
+    from glob import glob
+    import traceback
+    import pandas as pd
+    from tqdm import tqdm
+    from spit import tools
+    import numpy as np
+    from picasso.io import save_info
+
+    # check if file directory is specified
+    if args.files is None:
+        raise FileNotFoundError('No directory specified')
+    else:
+        files = args.files
+
+    # print params
+    ws = '  '
+    print('ROI - Parameter Settings:')
+    print(f'{"No":<6} | {ws+"Label":<18} | {ws+"Value":<10}')
+    for index, element in enumerate(vars(args)):
+        if getattr(args, element) is not None:
+            print(
+                f'{index+1:<6} | {ws+element:<18} | {ws+str(getattr(args,element)):<10}')
+    print('--------------------------------------------------------')
+    # format filepaths
+    if os.path.isdir(files):
+        print('Analyzing directory...')
+        if args.recursive == True:
+            paths = glob(files + '/**/**_locs.csv', recursive=True)
+        else:
+            paths = glob(files + '/*_locs.csv')
+
+    elif os.path.isfile(files):
+        paths = glob(files)
+    # remove filepaths that do match string
+    if args.avoidstring:
+        keptpaths = []
+        for path in paths:
+            if args.avoidstring not in path:
+                keptpaths.append(path)
+        paths = keptpaths
+
+    # remove filepaths that do not match string
+    if args.matchstring:
+        keptpaths = []
+        for path in paths:
+            if args.matchstring in path:
+                keptpaths.append(path)
+        paths = keptpaths
+
+    # initialize placeholders
+    skippedPaths = []
+
+    # print all kept paths
+    for path in paths:
+        print(path)
+    print(f'A total of {len(paths)} files detected...')
+    print('--------------------------------------------------------')
+
+    # main loop
+    for idx, path in tqdm(enumerate(paths), desc='Saving new loc-files...', total=len(paths)):
+        print('--------------------------------------------------------')
+        print(f'Running file {path}')
+        try:
+            (df_locs, info) = tools.load_locs(path)
+            # Look for ROI paths
+            pathsROI = glob(os.path.dirname(path) + '/*.roi', recursive=False)
+            print(f'Found {len(pathsROI)} ROI.')
+
+            dict_roi = {'cell_id': [], 'path': [], 'contour': [],
+                        'area': [], 'roi_mask': [], 'centroid': []}
+            # this stuff needs to go into tools
+            df_locs = df_locs.drop('cell_id', axis=1)
+            for idx, roi_path in enumerate(pathsROI):
+                roi_contour = tools.get_roi_contour(roi_path)
+                dict_roi['cell_id'].append(idx)
+                dict_roi['path'].append(roi_path)
+                dict_roi['contour'].append(roi_contour)
+                dict_roi['area'].append(tools.get_roi_area(roi_contour))
+                dict_roi['roi_mask'].append(
+                    tools.get_roi_mask(df_locs, roi_contour))
+                dict_roi['centroid'].append(
+                    tools.get_roi_centroid(roi_contour))
+
+            df_roi = pd.DataFrame(dict_roi)
+            df_locsM = pd.concat([df_locs[roi_mask] for roi_mask in df_roi.roi_mask], keys=list(
+                np.arange((df_roi.cell_id.size))))
+
+            df_locsM.index = df_locsM.index.set_names(['cell_id', None])
+            df_locsM = df_locsM.reset_index(level=0)
+            df_locsM = df_locsM.sort_values(['cell_id', 't'])
+            df_locsM = df_locsM.drop_duplicates(
+                subset=['x', 'y'])  # if ROIs overlap
+            df_locs = df_locsM
+
+            # get right output paths
+            pathOutput = path.replace('ch', args.suffix+'roi_ch')
+            df_locs.to_csv(pathOutput, index=False)
+
+            roi_info = {'Cell ROIs': str(df_roi.cell_id.unique())}
+            infoNew = info.copy()
+            infoNew.append(roi_info)
+            save_info(os.path.splitext(pathOutput)[0] + '.yaml', infoNew)
+        except Exception:
+            skippedPaths.append(path)
+
+            print('--------------------------------------------------------')
+            print(f'Path {path} could not be analyzed. Skipping...\n')
+            traceback.print_exc()
+
+    print('                                                        ')
+    print('--------------------------------------------------------')
+    print('/////////////////////FINISHED//////////////////////////')
+    print('--------------------------------------------------------')
+    if skippedPaths:
+        print('Skipped paths:')
+        for skippedPath in skippedPaths:
+            print(f'\n{skippedPath}\n')
 # %% link
 
 
@@ -333,11 +605,15 @@ def _link(args):
                 dt = 0.001 * \
                     int(float((''.join(c for c in dtStr if (c.isdigit() or c == '.')))))
 
+            if 'roi' in path:
+                roi_boolean = True
+            else:
+                roi_boolean = False
             # Select 200px^2 center FOV and first 500 frames
             if args.quick:
                 img_size = info[0]['Height']  # get image size
                 roi_width = 100
-                if not args.roi:  # avoiding clash with ROIs-only limit frames
+                if not roi_boolean:  # avoiding clash with ROIs-only limit frames
                     df_locs = df_locs[(df_locs.x > (img_size/2-roi_width))
                                       & (df_locs.x < (img_size/2+roi_width))]
                     df_locs = df_locs[(df_locs.y > (img_size/2-roi_width))
@@ -345,11 +621,11 @@ def _link(args):
                 df_locs = df_locs[df_locs.t <= 500]
                 quick = '_quick'
 
-            if args.roi:
+            if roi_boolean:
                 # Look for ROI paths
                 pathsROI = glob(os.path.dirname(path) +
                                 '/*.roi', recursive=False)
-                print(f'Found {len(pathsROI)} ROI.')
+                print(f'Adding {len(pathsROI)} ROI infos.')
 
                 dict_roi = {'cell_id': [], 'path': [], 'contour': [],
                             'area': [], 'roi_mask': [], 'centroid': []}
@@ -366,24 +642,9 @@ def _link(args):
                         tools.get_roi_centroid(roi_contour))
 
                 df_roi = pd.DataFrame(dict_roi)
-                # df_locs = df_locs.drop(columns=['cell_id']) # is this required?
-                df_locsM = pd.concat([df_locs[roi_mask] for roi_mask in df_roi.roi_mask],
-                                     keys=list(np.arange((df_roi.cell_id.size))))
-
-                df_locsM.index = df_locsM.index.set_names(['cell_id', None])
-                df_locsM = df_locsM.reset_index(level=0)
-                df_locsM = df_locsM.sort_values(['cell_id', 't'])
-                df_locsM = df_locsM.drop_duplicates(
-                    subset=['x', 'y'])  # if ROIs overlap
-                df_locs = df_locsM
-
-                # locs_masked.plot.scatter(x='x',y='y',c='cell_id',colormap='viridis')
-
-            # before choosing track algorithm: plot all the loc-derived stats
-            # using all roi-masked or quicked locs (in px)
-            df_locs_nm = tools.df_convert2nm(df_locs, px2nm)
 
             # save ('quick'-cropped) locs in nm and plot stats
+            df_locs_nm = tools.df_convert2nm(df_locs, px2nm)
             path_nm = os.path.splitext(path)[0]+quick+args.suffix+'_nm.csv'
             df_locs_nm.to_csv(path_nm, index=False)
             path_plots_loc = tools.getOutputpath(
@@ -415,7 +676,7 @@ def _link(args):
                 # swiftGUI compatible columns, and unique track.ids
                 df_tracks = tools.df_convert2nm(df_tracksTP, px2nm)
                 df_tracks['seg.id'] = df_tracksTP['track.id']
-                if args.roi:
+                if 'roi' in path:
                     df_tracks = tools.get_unique_trackIDs(df_tracks)
                 df_tracks.to_csv(path_output + '.csv', index=False)
 
@@ -455,7 +716,7 @@ def _link(args):
                 }
                 link.create_paramfile(path_params+'.json', **swift_kwargs)
                 df_tracks = link.link_locs_swift(
-                    path_nm, path_output, path_params, args.roi)
+                    path_nm, path_output, path_params, roi_boolean)
 
                 # Iterations
                 if args.iterate:
@@ -484,7 +745,7 @@ def _link(args):
                             path_params_updated+'.json', **swift_kwargs)
                         # Link original locs with new params
                         df_tracks = link.link_locs_swift(
-                            path_nm, path_output, path_params_updated, args.roi)
+                            path_nm, path_output, path_params_updated, roi_boolean)
 
                         mjdList.append(mjd_median)
                         delta = mjdList[-1]-mjdList[-2]
@@ -501,7 +762,7 @@ def _link(args):
                         meta_file, 'paramfiles', keepFilename=True)
                     shutil.move(meta_file, path_meta_file+'.json')
 
-            ### Analysis and Plotting
+            # Analysis and Plotting
 
             print('Calculating and plotting particle-wise diffusion analysis...\n')
             df_stats = link.get_particle_stats(df_tracks,
@@ -510,7 +771,7 @@ def _link(args):
                                                t='t')
 
             # adding ROI stats to track stat file
-            if args.roi:
+            if roi_boolean:
                 df_stats = df_stats.merge(
                     df_roi[['path', 'contour', 'area', 'centroid', 'cell_id']], on='cell_id', how='left')
 
@@ -574,24 +835,24 @@ def _colocalize(args):
     if os.path.isdir(dirpath):
         print('Analyzing directory...')
         pathsCh0 = glob(dirpath + f'//**//*{ch0}*_locs.csv', recursive=True)
-        print(f'Found {len(pathsCh0)} files for channel 0...')
-
         # remove filepaths that do match string
         if args.avoidstring:
             keptpaths = []
             for path in pathsCh0:
-                if args.avoidstring not in pathsCh0:
+                if args.avoidstring not in path:
                     keptpaths.append(path)
-            paths = keptpaths
+            pathsCh0 = keptpaths
 
         # remove filepaths that do not match string
         if args.matchstring:
             keptpaths = []
-            for path in paths:
+            for path in pathsCh0:
                 if args.matchstring in path:
-                    keptpaths.append(path)
-            paths = keptpaths
 
+                    keptpaths.append(path)
+            pathsCh0 = keptpaths
+        print(pathsCh0)
+        print(f'Found {len(pathsCh0)} files for channel 0...')
         for path in pathsCh0:
             print(path)
     else:
@@ -752,9 +1013,6 @@ def _frap(args):
             print(f'\n{skippedPath}\n')
 
 
-# %% main
-
-
 def main():
     import argparse
 
@@ -841,6 +1099,71 @@ def main():
         '-plot', '--plot',
         default=False, action='store_true',
         help='plot number of localizations, next neighbour distance and photon histogram'
+    )
+
+    # transform
+    transform_parser = subparsers.add_parser(
+        'transform', help='transform colocalizations'
+    )
+    transform_parser.add_argument(
+        'files', nargs='?',
+        help='directory where localized files are'
+    )
+    transform_parser.add_argument(
+        '-as', '--avoidstring', type=str, default='transform', help='string to avoid in filepath'
+    )
+    transform_parser.add_argument(
+        '-ms', '--matchstring', type=str,
+        default=None, help='string to match in filepath'
+    )
+    transform_parser.add_argument(
+        '-r', '--recursive',
+        default=False, action='store_true',
+        help='recursive search subdirectories'
+    )
+    transform_parser.add_argument(
+        '-su', '--suffix', type=str, default='',
+        help='suffix to add to filename'
+    )
+    transform_parser.add_argument(
+        '-ch0', '--channel0', type=str,
+        default='ch0',
+        help='x_locs.csv file for channel 0 (if batching, make sure to only include shared file ending)'
+    )
+    transform_parser.add_argument(
+        '-ch1', '--channel1', type=str,
+        default='ch1',
+        help='x_locs.csv file for channel 1 (if batching, make sure to only include shared file ending)'
+    )
+    transform_parser.add_argument(
+        '-ch2', '--channel2', type=str,
+        default='ch2',
+        help='x_locs.csv file for channel 2 (if batching, make sure to only include shared file ending)'
+    )
+
+    # roi
+    roi_parser = subparsers.add_parser(
+        'roi', help='restrict localizations to regions of interests'
+    )
+    roi_parser.add_argument(
+        'files', nargs='?',
+        help='directory where localized files are'
+    )
+    roi_parser.add_argument(
+        '-as', '--avoidstring', type=str, default='roi', help='string to avoid in filepath'
+    )
+    roi_parser.add_argument(
+        '-ms', '--matchstring', type=str,
+        default=None, help='string to match in filepath'
+    )
+    roi_parser.add_argument(
+        '-r', '--recursive',
+        default=False, action='store_true',
+        help='recursive search subdirectories'
+    )
+    roi_parser.add_argument(
+        '-su', '--suffix', type=str, default='',
+        help='suffix to add to filename'
     )
 
     # link
@@ -1023,6 +1346,7 @@ def main():
         '-ch', '--channel', type=str, default=2, help='channel 0, 1 or  2 (left, middle or right) '
     )
 
+
     # parse arguments
     args = parser.parse_args()
     if args.module:
@@ -1032,6 +1356,10 @@ def main():
             _table(args)
         elif args.module == 'localize':
             _localize(args)
+        elif args.module == 'transform':
+            _transform(args)
+        elif args.module == 'roi':
+            _roi(args)
         elif args.module == 'link':
             _link(args)
         elif args.module == 'colocalize':
