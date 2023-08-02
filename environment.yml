@@ -29,5 +29,6 @@ dependencies:
   - tifffile
   - read-roi
   - pip:
+    - opencv-python
     - lmfit
     - sphinx-rtd-theme

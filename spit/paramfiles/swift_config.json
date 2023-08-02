@@ -1,0 +1,35 @@
+{
+    "in_format": {
+        "sep": ",",
+        "quote": "\"",
+        "name_aliases": {
+            "photons": "intensity"
+        }
+    },
+    "out_format": "auto",
+    "diffraction_limit": 30,
+    "exp_displacement": 341.74761676855843,
+    "max_displacement": 750,
+    "max_displacement_pp": 1500,
+    "p_bleach": 1e-13,
+    "precision": 20,
+    "tau": 40,
+    "directed_motion": false,
+    "max_log_complexity": 13,
+    "max_memory": 1500,
+    "max_particle_count": 2,
+    "max_subgraph_size": 50000,
+    "no_postprocessing": false,
+    "pruning_base": 1.5,
+    "pruning_rate": 0.2,
+    "threads": 12,
+    "exp_noise_rate": 5,
+    "p_switch": 0.0001,
+    "w_diffusion": 9,
+    "w_immobile": 1,
+    "max_blinking_duration": 5,
+    "p_blink": 0.01,
+    "p_reappear": 0.5,
+    "exp_displacement_max": 1074.792826915897,
+    "exp_displacement_max_pp": 1612.1892403738455
+}
