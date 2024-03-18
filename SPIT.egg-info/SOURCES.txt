@@ -1,3 +1,4 @@
+LICENSE.md
 README.md
 setup.py
 SPIT.egg-info/PKG-INFO
@@ -14,7 +15,5 @@ spit/localize.py
 spit/naclib.py
 spit/plot_coloc.py
 spit/plot_diffusion.py
-spit/simulate.py
-spit/swift_parameter_estimation.py
 spit/table.py
 spit/tools.py

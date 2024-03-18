@@ -2,13 +2,11 @@ Metadata-Version: 2.1
 Name: SPIT
 Version: 1.0.0
 Summary: A commandline app for single particle interaction tracking
-Home-page: UNKNOWN
+Home-page: 
 Author: Miles Henderson, Christian Niederauer
 Author-email: c.niederauer@amolf.nl, m.wanghenderson@amolf.nl
 License: MIT
-Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3.7
 Classifier: Operating System :: OS Independent
-
-UNKNOWN
-
+License-File: LICENSE.md
+Requires-Dist: picasso@ git+https://github.com/jungmannlab/picasso.git#egg=picasso-0.3.1

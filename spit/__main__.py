@@ -26,7 +26,6 @@ def _localize(args):
     from glob import glob
     import traceback
     import pandas as pd
-    from beepy import beep
     from picasso.io import load_movie, save_info
     from picasso.localize import (
         get_spots,
@@ -232,7 +231,6 @@ def _localize(args):
         for skippedPath in skippedPaths:
             print(f'\n{skippedPath}\n')
 
-    beep(sound=5)
 
 # %% transform
 
@@ -516,7 +514,6 @@ def _link(args):
     import numpy as np
     import pandas as pd
     import json
-    from beepy import beep
     from tqdm import tqdm
     from glob import glob
     from spit import linking as link
@@ -802,7 +799,6 @@ def _link(args):
         print('Analysis failed on paths:')
         for skippedPath in skippedPaths:
             print(f'\n{skippedPath}')
-    beep(sound=5)
 # %% colocalize
 
 

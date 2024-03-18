@@ -6,7 +6,7 @@ dependencies:
   - numpy
   - pandas
   - pytables
-  - python=3.7
+  - python=3.12
   - scikit-learn
   - scikit-image
   - fastparquet
