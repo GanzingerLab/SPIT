@@ -2,12 +2,13 @@
 Single Particle Interaction Tracking (SPIT) is a Python library for single-molecule experiments. The modules in this library can be used to localize particles from a raw movie, link their movements across frames into trajectories, and run analyses on trajectories to detect local colocalization and interaction.
 
 # Installation
-1. `git clone https://github.com/jungmannlab/picasso` and `git checkout 491ae28`
-3. `git clone https://github.com/GanzingerLab/SPIT`
-4. cd to the local version of the repository create environment `conda env create -f=environment.yml`
+1. Install Anaconda and git. Open Anaconda prompt.
+1. `git clone https://github.com/jungmannlab/picasso`, `cd picasso` and `git checkout 491ae28`
+3. `cd ..` into parent folder, `git clone https://github.com/GanzingerLab/SPIT`
+4. `cd SPIT` and create environment `conda env create -f=environment.yml`
 5. activate environment with `activate SPIT`
-6. build package: move to picasso repository and `python setup.py install`
-7. build package: move to SPIT repository and `python setup.py install`
+6. build package: `cd ..` and `cd picasso` to move to picasso repository and `python setup.py install`
+7. build package:  `cd ..` and `cd SPIT to move to SPIT repository and `python setup.py install`
 
 
 # Usage
