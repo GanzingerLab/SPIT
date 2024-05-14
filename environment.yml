@@ -3,11 +3,11 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - numpy
-  - pandas
+  - numpy=1.24.3
+  - pandas=2.1.1
   - pytables
-  - python=3.12
-  - scikit-learn
+  - python=3.10
+  - scikit-learn=1.3.1
   - scikit-image
   - fastparquet
   - trackpy
@@ -15,14 +15,13 @@ dependencies:
   - pyyaml
   - pip
   - seaborn
-  - matplotlib
-  - scipy
+  - matplotlib=3.7.3
+  - scipy=1.11.2
   - dask
   - hdbscan
-  - tqdm
+  - tqdm=4.66.1
   - pyqt
-  - numba
-  - naclib
+  - numba=0.58.0
   - spyder
   - colorama
   - jupyterlab
@@ -31,5 +30,6 @@ dependencies:
   - read-roi
   - pip:
     - opencv-python
-    - lmfit
+    - lmfit==1.2.2
     - sphinx-rtd-theme
+    - naclib
