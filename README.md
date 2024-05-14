@@ -3,7 +3,7 @@ Single Particle Interaction Tracking (SPIT) is a Python library for single-molec
 
 # Installation
 1. Install Anaconda and git. Open Anaconda prompt.
-2. `git clone https://github.com/jungmannlab/picasso`, `cd picasso` and `git checkout 491ae28`
+2. `git clone https://github.com/jungmannlab/picasso`
 3. `cd ..` into parent folder, `git clone https://github.com/GanzingerLab/SPIT`
 4. `cd SPIT` and create environment `conda env create -f=environment.yml`
 5. activate environment with `activate SPIT`
