@@ -41,7 +41,7 @@ def plot_localization_precision(df_locs, path=None, ax=None):
     shape, loc, scale = scipy.stats.lognorm.fit(loc_precision_filtered.values)
     log_norm_fit = scipy.stats.lognorm.pdf(bins, shape, loc, scale)
     ax.plot(bins, log_norm_fit, color='orange')
-    ax.text(0.95, 0.05, s=f'$\sigma = $ {loc_precision_median:.0f} nm',
+    ax.text(0.95, 0.05, s=rf'$\sigma = $ {loc_precision_median:.0f} nm',
             ha='right', va='bottom', color='k', transform=ax.transAxes,
             bbox=dict(facecolor='ghostwhite', alpha=0.8, edgecolor='lightgrey'))
     ax.axvline(loc_precision_median,
@@ -292,7 +292,7 @@ def plot_msd(df_stats, dt, path=None, plot_loglog=True, ax=None):
         df_stats.D_msd, weights=df_stats.loc_count)  # weighted median
     # D_msd_median = df_tracks.D_msd.quantile(q=0.5)
 
-    ax.text(0.05, 0.95, s=f'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
+    ax.text(0.05, 0.95, s=rf'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
             ha='left', va='top', color='k', transform=ax.transAxes,
             bbox=dict(facecolor='ghostwhite', alpha=0.8, edgecolor='lightgrey'))
 
@@ -360,7 +360,7 @@ def plot_Dmsd(df_stats, dt, path=None, ax=None, color='black', split=False):
     D_msd_median_w = np.average(df_stats.D_msd, weights=df_stats.loc_count)
 
     if not split:
-        ax.text(0.95, 0.95, s=f'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
+        ax.text(0.95, 0.95, s=rf'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
                 ha='right', va='top', color='k', transform=ax.transAxes,
                 bbox=dict(facecolor='ghostwhite', alpha=0.8, edgecolor='lightgrey'))
 
@@ -430,7 +430,7 @@ def plot_Dmsd_seg(df_tracks, dt, path=None, ax=None):
                alpha=0.8,
                label='Median')
 
-    ax.text(0.95, 0.95, s=f'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
+    ax.text(0.95, 0.95, s=rf'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
             ha='right', va='top', color='k', transform=ax.transAxes,
             bbox=dict(facecolor='ghostwhite', alpha=0.8, edgecolor='lightgrey'))
 
@@ -530,7 +530,7 @@ def plot_jd(df_stats, dt, path=None, ax=None):
             alpha=0.35,
             label='Immobile')
 
-    ax.text(0.95, 0.95, s=f'D1 = {pars[0]:.2} $\mu m^2/s$ \nD2 = {pars[2]:.2} $\mu m^2/s$',
+    ax.text(0.95, 0.95, s=rf'D1 = {pars[0]:.2} $\mu m^2/s$ \nD2 = {pars[2]:.2} $\mu m^2/s$',
             ha='right', va='top', color='k', transform=ax.transAxes, zorder=100,
             bbox=dict(facecolor='ghostwhite', alpha=0.8, edgecolor='lightgrey'))
 
@@ -581,9 +581,8 @@ def plot_tracks_filtered(df_tracks, df_tracksF, df_stats, path=None, px2nm=108, 
     for i, track in df_tracksF_unstacked.iterrows():
         ax.plot(track.x, track.y, color=unique_colors[track.name % 10])
 
-    if 'cell_id' in df_tracks.columns:
+    if 'contour' in df_stats.columns:
         nROI = df_tracks['cell_id'].unique()
-        # if len(nROI)>1:
         colors = iter([plt.cm.Accent(i) for i in range(len(nROI))])
         contours = df_stats.groupby('cell_id').contour.mean()
         for idx, roi in enumerate(nROI):

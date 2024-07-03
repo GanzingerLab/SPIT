@@ -131,7 +131,7 @@ def _localize(args):
                     else:
                         print(f'Localizing channel {j} of {path}')
                     print('--------------------------------------------------------')
-
+                    
                     current, futures = identify_async(
                         movie, min_net_gradient[j], box)
                     ids = identifications_from_futures(futures)
