@@ -18,36 +18,6 @@ from spit import tools
 #used new package to detect the largest rectangle after alginment (removing edges) that speeds up the process. Only needed for module 2. 
 import largestinteriorrectangle as lir
 
-#needed functions. I will add them some day to SPIT.tools
-def read_result_file(file):
-    with open(file, 'r') as resultTxt:
-        resultLines = resultTxt.readlines()
-    resultdict = {}
-    for line in resultLines:
-        if ': ' in line:
-            key, value = line.split(': ', 1)
-            if key not in resultdict:
-                resultdict[key] = value.strip()
-    return resultdict
-
-
-def get_pattern(result):
-    pattern_dict = {}
-    for i in result.keys():
-        if 'Pattern' in i:
-            pat = i.replace("tern", "")
-            pattern_dict[pat] = result[i].split(',')
-    # found_string_list = [i.split(':')[1].split(',') for i in resultLines if 'Pattern' in i]
-    return pattern_dict
-
-def get_VCR_pattern(result):
-    VCR_dict = {'405nm': False, '488nm': False, '561nm': False, '638nm': False}
-    for i in result: 
-        if 'Laser' in i and 'ON' in result[i]:
-            VCR_dict[i[6:11]] = True
-    return VCR_dict
-
-
 #Setings for the alignment. Please check everything is correct. 
 class Settings:
     def __init__(self):
@@ -117,7 +87,7 @@ class Settings:
     
 
 #Folder of the images you want to align:      
-directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\test_batch_correction3'
+directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi'
 pathsRaw = glob(directory_path + '/**/**.raw', recursive=True) #Check for each .row file in the folder and subfolders. 
 directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
 
@@ -129,7 +99,7 @@ to_keep = settings.to_keep
 for fol in directory_names: #go to each folder and: 
     result_file = fol+'\\' +fol.split("\\")[-1]+'_result.txt'  #get direction result.txt file
     datalog_file = fol+'\\' +fol.split("\\")[-1]+'_datalog.txt' #get direction of datalog.txt file. 
-    result_txt=read_result_file(result_file) #get a dictionary with the information in the result.txt file. 
+    result_txt=tools.read_result_file(result_file) #get a dictionary with the information in the result.txt file. 
     save_folder = os.path.join(directory_path, 'output', fol.replace(directory_path, '')[1:]) #define save folder. 
     if not os.path.exists(save_folder): #create the save folder if it does not exist. 
         os.makedirs(save_folder)
@@ -148,7 +118,7 @@ for fol in directory_names: #go to each folder and:
         xlim, ylim = settings.load_crop_K2()
     #check the imaging mode used: sequence or record (a.k.a VCR). 
     if result_txt['Mode'] == 'Sequence': #if you used sequence for that run
-        pattern = get_pattern(result_txt) #get the specific patterns that you used. 
+        pattern = tools.get_pattern(result_txt) #get the specific patterns that you used. 
         for pat, ch in pattern.items():  #and for each pattern
             file_name = fol+'\\' +fol.split("\\")[-1]+'_'+pat+'.raw' #open the raw file
             d, inf = tools.load_raw(file_name)
@@ -166,7 +136,7 @@ for fol in directory_names: #go to each folder and:
                 save = os.path.join(save_folder, pat+"_"+i.strip()+'.tif') #save the image as .tif
                 imageio.mimwrite(save, cropped_im)    
     elif result_txt['Mode'] == 'VCR': #if you used record for that run
-        pattern = get_VCR_pattern(result_txt) #get the lasers that you used. 
+        pattern = tools.get_VCR_pattern(result_txt) #get the lasers that you used. 
         file_name = fol+'\\' +fol.split("\\")[-1]+'_'+'record'+'.raw'#open the raw file
         d, inf = tools.load_raw(file_name)
         for ch, presence in pattern.items(): #for each laser used

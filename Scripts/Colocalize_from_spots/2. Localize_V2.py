@@ -79,7 +79,7 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL006\9.5pM_2'
+    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:

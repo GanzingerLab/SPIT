@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: SPIT
 Version: 1.0.0
 Summary: A commandline app for single particle interaction tracking
@@ -10,3 +10,9 @@ Classifier: Programming Language :: Python :: 3.7
 Classifier: Operating System :: OS Independent
 License-File: LICENSE.md
 Requires-Dist: picasso@ git+https://github.com/jungmannlab/picasso.git#egg=picasso-0.3.1
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: license
+Dynamic: requires-dist
+Dynamic: summary

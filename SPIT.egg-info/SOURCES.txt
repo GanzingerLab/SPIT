@@ -7,7 +7,6 @@ SPIT.egg-info/dependency_links.txt
 SPIT.egg-info/requires.txt
 SPIT.egg-info/top_level.txt
 spit/__init__.py
-spit/__main__.py
 spit/colocalize.py
 spit/frap.py
 spit/linking.py
