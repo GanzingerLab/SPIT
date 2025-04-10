@@ -362,6 +362,35 @@ def write_fig_info(path, **kwargs):
     with open(f'{path}_info.txt', 'w') as f:
         for k, v in kwargs.items():
             f.write(str(k) + ': ' + str(v) + '\n\n')
+
+def read_result_file(file):
+    with open(file, 'r') as resultTxt:
+        resultLines = resultTxt.readlines()
+    resultdict = {}
+    for line in resultLines:
+        if ': ' in line:
+            key, value = line.split(': ', 1)
+            if key not in resultdict:
+                resultdict[key] = value.strip()
+    return resultdict
+
+
+def get_pattern(result):
+    pattern_dict = {}
+    for i in result.keys():
+        if 'Pattern' in i:
+            pat = i.replace("tern", "")
+            pattern_dict[pat] = result[i].split(',')
+    # found_string_list = [i.split(':')[1].split(',') for i in resultLines if 'Pattern' in i]
+    return pattern_dict
+
+def get_VCR_pattern(result):
+    VCR_dict = {'405nm': False, '488nm': False, '561nm': False, '638nm': False}
+    for i in result: 
+        if 'Laser' in i and 'ON' in result[i]:
+            VCR_dict[i[6:11]] = True
+    return VCR_dict
+
 # %% ROI tools
 
 

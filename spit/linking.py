@@ -44,6 +44,8 @@ def link_locs_trackpy(df_locs, search, memory):
     df_tracks = tp.link(df_locs,
                         search_range=search,
                         memory=memory,
+                        adaptive_step=0.95,
+                        adaptive_stop = 2,
                         link_strategy='hybrid',
                         )
 
@@ -281,22 +283,22 @@ def displacement_moments(t, x, y):
 
     for i in range(N-1):
         # Distance traveled per frame
-        dx = x_gap[i+1]-x_gap[i]
-        dy = y_gap[i+1]-y_gap[i]
-        jumpsSq = dx**2 + dy**2
-        jumps[i] = np.sqrt(jumpsSq)
+        dx = x_gap[i+1]-x_gap[i] #calculate jumps in x
+        dy = y_gap[i+1]-y_gap[i] #calculates jumps in y
+        jumpsSq = dx**2 + dy**2 #calculates sum of the squares of the jumps in x and y.
+        jumps[i] = np.sqrt(jumpsSq) #save jump as square root of jumpSq
 
-    moments = np.ones((max_lag, 5), dtype=np.float32)
+    moments = np.ones((max_lag, 5), dtype=np.float32) #initilize variable. 
     r2max_leql = np.zeros(N+1, dtype=np.float64)  # Init max distance traveled
     r4max_leql = np.zeros(N+1, dtype=np.float64)
     for l in range(max_lag):
         # One dimensional jumps for lag l
-        dx = x_gap[l:]-x_gap[:N-l]
-        dy = y_gap[l:]-y_gap[:N-l]
+        dx = x_gap[l:]-x_gap[:N-l] #calculates jumps in x with a distance of l frames in distance
+        dy = y_gap[l:]-y_gap[:N-l] #calculates the same for y. 
 
         # Two dimensional jumps to the power of two and four
-        r2_l = dx**2+dy**2
-        r4_l = dx**4+dy**4
+        r2_l = dx**2+dy**2 #sums the distance to the power of 2
+        r4_l = dx**4+dy**4 #sums the distance to the the power of 4. 
 
         # Assign mean moments
         moments[l, 0] = l
