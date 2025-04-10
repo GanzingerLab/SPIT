@@ -22,7 +22,7 @@ from multiprocessing import freeze_support
 
 class Settings:
     def __init__(self):
-        self.coloc = False  #Bool --> are you using a colocalization file or not? 
+        self.coloc = True  #Bool --> are you using a colocalization file or not? 
         self.dt = None  #specify the exposure time (in seconds!) or None. If None, the script will look for it in the _result.txt file. 
         self.quick = False  #use the quick version? 200px squared from the center and only 500 frames. 
         self.roi = True #Do you want to filter per ROI? 
@@ -42,7 +42,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return 108
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output2\Run00002'
+    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output\Run00002'
     # directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL002_Sample_from_yesterday\output\after_adding_dil2\Run00010'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))

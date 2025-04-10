@@ -11,7 +11,7 @@ from picasso.io import save_info
 
 class Settings:
     def __init__(self):
-        self.ch0 = '561'#'561nm'  
+        self.ch0 = '488'#'561nm'  
         self.ch1 = '638' #'638nm'  
         self.th = 300 #Threshold distance to consider colocalization in nm. Default by Chris: 250
         self.min_overlapped_frames = 3 #minimum amunt of frames in which the spots of the tracks have to be closer than the threshold distance set in th in a row.
@@ -27,7 +27,7 @@ class Settings:
             return 108
 
 def main(): 
-    directory_path = r'D:\Data\20250408_GCL009\Selected'
+    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output\Run00002'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
     for image in paths_locs:

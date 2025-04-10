@@ -29,8 +29,8 @@ class Settings:
         
         self.gradient405 = 300  
         self.gradient488 = 800 
-        self.gradient561 = 400
-        self.gradient638 = 350
+        self.gradient561 = 800
+        self.gradient638 = 800
          
         self.camera_info = {}
         #Set the gain of the microscope. 
