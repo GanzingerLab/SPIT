@@ -138,7 +138,9 @@ def coloc_tracks(df_488, df_638, leng = 10, max_distance = 250, n = 3):
                                                    distances, 
                                                    np.average(distances[distances <= max_distance]), 
                                                    track1[['x','y']], 
-                                                   track2[['x','y']]])
+                                                   track2[['x','y']], 
+                                                   df_488[df_488['track.id']== t1].cell_id.unique()[0]                                              
+                                                          ])
                             break
     if matched_tracks:
         matched_df = pd.DataFrame(matched_tracks, columns = ['track.id0', 
@@ -146,11 +148,12 @@ def coloc_tracks(df_488, df_638, leng = 10, max_distance = 250, n = 3):
                                                              'overlap_t', 
                                                              'coexist_s',
                                                              '%col_time' ,
-                                                             '#frames_coloc', 
+                                                             'num_frames_coloc', 
                                                              'distances', 
                                                              'average_distance', 
                                                              'track0', 
-                                                             'track1' ])
+                                                             'track1', 
+                                                             'cell_id'])
         print('\n')
         
         
@@ -190,7 +193,7 @@ def coloc_tracks(df_488, df_638, leng = 10, max_distance = 250, n = 3):
         concatenated_data = []
         matched_df = matched_df.drop(to_remove)
         matched_df['colocID'] = range(len(matched_df))
-        matched_df = matched_df[['colocID', 'track.id0','track.id1','overlap_t', 'coexist_s','%col_time' ,'#frames_coloc', 'distances', 'average_distance', 'track0', 'track1' ]]
+        matched_df = matched_df[['colocID', 'track.id0','track.id1','overlap_t', 'coexist_s','%col_time' ,'num_frames_coloc', 'distances', 'average_distance', 'track0', 'track1', 'cell_id' ]]
         
         # Iterate through the matched_df DataFrame
         for index, row in matched_df.iterrows():

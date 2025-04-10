@@ -28,9 +28,9 @@ class Settings:
         self.box = 5
         
         self.gradient405 = 300  
-        self.gradient488 = 440 
+        self.gradient488 = 500 
         self.gradient561 = 400
-        self.gradient638 = 440
+        self.gradient638 = 500
          
         self.camera_info = {}
         #Set the gain of the microscope. 
@@ -42,7 +42,7 @@ class Settings:
         #In Picasso qe (quantum efficiency) is not used anymore. It is left for bacward compatibility. 
         self.camera_info['qe'] = 0.9
         #'com' for tracking, 'lq' for stationary stuff     
-        self.fit_method = 'com' 
+        self.fit_method = 'lq' 
         #Pixel size to micrometers. For Annapurna ~0.09. For K2 ~0.108
 
         self.suffix = ''
@@ -79,7 +79,7 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'D:\Data\Chi_data\20250401 for Gerard\CART3_FMC63_LoExp\Run00001_timelapse\output\Run00004'
+    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:

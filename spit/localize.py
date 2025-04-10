@@ -123,13 +123,13 @@ def plot_loc_stats(df_locs, path, combFit=False, centersInit=(1000, 2000)):
     ax[0].plot(nLocs, '-', c='tomato', alpha=0)
     ax[0].set_ylabel('# Localizations', color='k')
     ax[0].yaxis.set_tick_params(color='k')
-    ax[0].set_ylim(0, 800)
+    # ax[0].set_ylim(0, 800)
     ax[0].set_xlabel('Frame')
     # Second y axis
     ax2 = ax[0].twinx()
     ax2.plot(nLocs_um, 'o', c='tomato')
     ax2.set_ylabel('# Localizations/um2', color='k')
-    ax2.set_ylim(0, 800/area)
+    # ax2.set_ylim(0, 800/area)
 
     # Nearest neighbor distance
     nearest_neighbor = get_nearest_neighbor(df_locs)

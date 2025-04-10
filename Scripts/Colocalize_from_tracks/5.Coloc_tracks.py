@@ -11,10 +11,10 @@ from picasso.io import save_info
 
 class Settings:
     def __init__(self):
-        self.ch0 = '488'#'561nm'  
-        self.ch1 = '638' #'638nm'  
+        self.ch0 = '638'#'561nm'  
+        self.ch1 = '488' #'638nm'  
         self.th = 300 #Threshold distance to consider colocalization in nm. Default by Chris: 250
-        self.min_overlapped_frames = 3 #minimum amunt of frames in which the spots of the tracks have to be closer than the threshold distance set in th in a row.
+        self.min_overlapped_frames = 5 #minimum amunt of frames in which the spots of the tracks have to be closer than the threshold distance set in th in a row.
         self.min_len_track = 5 #minimum length of a track (in frames) to consider it for the analysis.
         self.suffix = '' #sufix for the name of the file, if necessary. 
         self.dt = None #specify the exposure time (in seconds!) or None. If None, the script will look for it in the _result.txt file. 
@@ -27,7 +27,7 @@ class Settings:
             return 108
 
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output\Run00002'
+    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
     for image in paths_locs:
@@ -93,6 +93,27 @@ def colocalize_tracks(dirpath):
 
                 print('Saving colocalizations...')
                 df_colocs.to_csv(pathOutput + '_colocsTracks.csv', index=False)
+                if 'roi' in pathCh0:
+                    # Look for ROI paths
+                    pathsROI = glob(os.path.dirname(pathCh0) +
+                                    '/*.roi', recursive=False)
+                    print(f'Adding {len(pathsROI)} ROI infos.')
+        
+                    dict_roi = {'cell_id': [], 'path': [], 'contour': [],
+                                'area': [], 'centroid': []}
+                    # this stuff needs to go into tools
+                    for idx, roi_path in enumerate(pathsROI):
+                        roi_contour = tools.get_roi_contour(roi_path)
+                        dict_roi['cell_id'].append(idx)
+                        dict_roi['path'].append(roi_path)
+                        dict_roi['contour'].append(roi_contour)
+                        dict_roi['area'].append(tools.get_roi_area(roi_contour))
+                        dict_roi['centroid'].append(
+                            tools.get_roi_centroid(roi_contour))
+        
+                    df_roi = pd.DataFrame(dict_roi)
+                    coloc_stats = coloc_stats.merge(
+                        df_roi[['path', 'contour', 'area', 'centroid', 'cell_id']], on='cell_id', how='left')
 
                 info_file = "\\".join(pathCh0.split('\\')[:-1]) +"\\"+ pathCh0.split('\\')[-1].split('.')[0]+'.yaml'
                 # export parameters to yaml

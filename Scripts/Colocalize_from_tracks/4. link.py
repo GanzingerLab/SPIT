@@ -32,8 +32,8 @@ class Settings:
         self.tracker = 'trackpy' #Tracker algorithm to use: trackpy or swift. After talking with Chris, swift is very complicated and the focus of the developers is not 
         # really tracking, but the diffusion rates. So, swift is not implemented, and I am not sure if it will. 
     #################Tracking params############
-        self.memory = 2 #max number of frames from which a particle can disappear 
-        self.search = 7 #max search range for trackpy linking in px 
+        self.memory = 0 #max number of frames from which a particle can disappear 
+        self.search = 20 #max search range for trackpy linking in px 
     def get_px2nm(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
         result_txt  = read_result_file(file) #this opens the results.txt file to check the microscope used. 
                 #It should be in a folder called paramfile inside the folder where the script is located. 
@@ -42,7 +42,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return 108
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output2\Run00002'
+    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
     # directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL002_Sample_from_yesterday\output\after_adding_dil2\Run00010'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
