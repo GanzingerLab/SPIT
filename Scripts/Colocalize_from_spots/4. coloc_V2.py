@@ -19,7 +19,7 @@ class Settings:
         self.suffix = '' #sufix for the name of the file, if necessary. 
         self.dt = None #specify the exposure time (in seconds!) or None. If None, the script will look for it in the _result.txt file. 
     def get_px2nm(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
-        result_txt  = read_result_file(file) #this opens the results.txt file to check the microscope used. 
+        result_txt  = tools.read_result_file(file) #this opens the results.txt file to check the microscope used. 
                 #It should be in a folder called paramfile inside the folder where the script is located. 
         if result_txt['Computer'] == 'ANNAPURNA': 
             return 90.16
@@ -127,17 +127,6 @@ def colocalizee(dirpath):
         print('Skipped paths:')
         for skippedPath in skippedPaths:
             print(f'\n{skippedPath}\n')
-
-def read_result_file(file):
-    with open(file, 'r') as resultTxt:
-        resultLines = resultTxt.readlines()
-    resultdict = {}
-    for line in resultLines:
-        if ': ' in line:
-            key, value = line.split(': ', 1)
-            if key not in resultdict:
-                resultdict[key] = value.strip()
-    return resultdict
 
 
 if __name__ == '__main__':

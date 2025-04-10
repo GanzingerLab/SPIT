@@ -58,7 +58,7 @@ class Settings:
         elif '405nm' in filename:
             return self.gradient405
     def get_naclib(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
-        result_txt  = read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
+        result_txt  = tools.read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
         root = os.path.dirname(__file__)
         paramfiles_path = os.path.join(root, "Registration_folder/") #This sets the folder where the naclib coefficients are. 
         #It should be in a folder called paramfile inside the folder where the script is located. 
@@ -67,7 +67,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return pd.read_csv(os.path.join(paramfiles_path, 'naclib_coefficients_K2.csv'))
     def get_px2um(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
-        result_txt  = read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
+        result_txt  = tools.read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
         root = os.path.dirname(__file__)
         paramfiles_path = os.path.join(root, "Registration_folder/") #This sets the folder where the naclib coefficients are. 
         #It should be in a folder called paramfile inside the folder where the script is located. 
@@ -195,17 +195,6 @@ def localizee(folder):
         skippedPaths.append(folder)
         print('Skipping...\n')
         print('--------------------------------------------------------')
-    
-def read_result_file(file):
-    with open(file, 'r') as resultTxt:
-        resultLines = resultTxt.readlines()
-    resultdict = {}
-    for line in resultLines:
-        if ': ' in line:
-            key, value = line.split(': ', 1)
-            if key not in resultdict:
-                resultdict[key] = value.strip()
-    return resultdict
 
 if __name__ == '__main__':
     freeze_support()

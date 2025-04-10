@@ -79,24 +79,26 @@ class Settings:
         Hr = np.loadtxt(H_right_path, delimiter=",", dtype=float)
         return Hr
     def load_crop_K2(self):
-        crop_path = os.path.join(registration_folder,'K2-BIVOUAC_lims.csv')
+        crop_path = os.path.join(self.registration_folder,'K2-BIVOUAC_lims.csv')
         crop_loc = np.loadtxt(crop_path, delimiter=",", dtype=int)
         xlim = [crop_loc[0], crop_loc[1]]
         ylim = [crop_loc[2], crop_loc[3]]
         return xlim, ylim
+
+def main(): 
+    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi'
+    pathsRaw = glob(directory_path + '/**/**.raw', recursive=True) #Check for each .row file in the folder and subfolders. 
+    directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+    for path in directory_names:
+        if os.path.isdir(path):
+            preprocess(path, directory_path)
+    print('########Finished########')
+def preprocess(fol, directory_path):            
+    settings = Settings() #initialize the settings defined above.
+    registration_folder  = settings.registration_folder
+    verticalROI = settings.verticalROI
+    to_keep = settings.to_keep
     
-
-#Folder of the images you want to align:      
-directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi'
-pathsRaw = glob(directory_path + '/**/**.raw', recursive=True) #Check for each .row file in the folder and subfolders. 
-directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
-
-settings = Settings() #initialize the settings defined above.
-registration_folder  = settings.registration_folder
-verticalROI = settings.verticalROI
-to_keep = settings.to_keep
-
-for fol in directory_names: #go to each folder and: 
     result_file = fol+'\\' +fol.split("\\")[-1]+'_result.txt'  #get direction result.txt file
     datalog_file = fol+'\\' +fol.split("\\")[-1]+'_datalog.txt' #get direction of datalog.txt file. 
     result_txt=tools.read_result_file(result_file) #get a dictionary with the information in the result.txt file. 
@@ -154,4 +156,5 @@ for fol in directory_names: #go to each folder and:
                 save = os.path.join(save_folder, ch+'.tif') #save the image as .tif
                 imageio.mimwrite(save, cropped_im)
     print('Finished with files in', fol.replace(directory_path, '')[1:])
-print('########Finished########')
+if __name__ == '__main__':
+    main()
