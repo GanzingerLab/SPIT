@@ -25,14 +25,14 @@ class Settings:
         self.coloc = False  #Bool --> are you using a colocalization file or not? 
         self.dt = None  #specify the exposure time (in seconds!) or None. If None, the script will look for it in the _result.txt file. 
         self.quick = False  #use the quick version? 200px squared from the center and only 500 frames. 
-        self.roi = True #Do you want to filter per ROI? 
+        self.roi = False #Do you want to filter per ROI? 
         self.suffix = '' #sufix for the name of the file, if necessary. 
         self.fil_len = 10 #filter the length of the tracks. Tracks shorter than this ammount of frames will be filtered
         self.fil_diff = 0.002 #Filter for immobile particles. Tracks with a diffusion coefficient smaller than this number will be filtered
         self.tracker = 'trackpy' #Tracker algorithm to use: trackpy or swift. After talking with Chris, swift is very complicated and the focus of the developers is not 
         # really tracking, but the diffusion rates. So, swift is not implemented, and I am not sure if it will. 
     #################Tracking params############
-        self.memory = 0 #max number of frames from which a particle can disappear 
+        self.memory = 3 #max number of frames from which a particle can disappear 
         self.search = 20 #max search range for trackpy linking in px 
     def get_px2nm(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
         result_txt  = read_result_file(file) #this opens the results.txt file to check the microscope used. 
@@ -42,7 +42,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return 108
 def main(): 
-    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
+    directory_path = r'D:\Data\20250408_GCL009\selected2\output'
     # directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL002_Sample_from_yesterday\output\after_adding_dil2\Run00010'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))

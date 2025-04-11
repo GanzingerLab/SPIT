@@ -29,8 +29,8 @@ class Settings:
         
         self.gradient405 = 300  
         self.gradient488 = 500 
-        self.gradient561 = 400
-        self.gradient638 = 500
+        self.gradient561 = 350
+        self.gradient638 = 350
          
         self.camera_info = {}
         #Set the gain of the microscope. 
@@ -79,7 +79,7 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
+    directory_path = r'D:\Data\20250408_GCL009\selected2\output'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:
