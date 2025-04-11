@@ -10,8 +10,11 @@ Single Particle Interaction Tracking (SPIT) is a Python library for single-molec
 6. in Anaconda prompt, move into SPIT folder (using cd ..) and create environment using conda env create -f=environment.yml
 7. activate the environment using activate SPIT
 8. then build packages:
+
 	8.1. move to picasso folder: cd ...Documents/Github/picasso and `pip install .`
+	
 	8.2. move to naclib folder: cd ...Documents/Github/naclib and `pip install .`
+	
 	8.3. move to SPIT and `pip install -e .`
 9. install Spyder in the newly created SPIT environment: `conda install spyder`
 10. finally, install lir in the SPIT environment. pip install largestinteriorrectangle
