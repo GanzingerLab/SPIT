@@ -8,6 +8,7 @@ Single Particle Interaction Tracking (SPIT) is a Python library for single-molec
 4. open the Windows command line, move into the just created picasso folder (cd C:\...\Documents\GitHub\picasso) and type `git checkout 491ae28` to revert picasso to the version that works with SPIT
 5. using GitHub Desktop, clone naclib `https://github.com/edovanveen/naclib` and SPIT `https://github.com/GanzingerLab/SPIT`
 6. in Anaconda prompt, move into SPIT folder (using cd ..) and create environment using 
+
 `conda env create -f=environment.yml`
 7. activate the environment using activate SPIT
 8. then build packages:
