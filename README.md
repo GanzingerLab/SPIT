@@ -2,26 +2,27 @@
 Single Particle Interaction Tracking (SPIT) is a Python library for single-molecule experiments. The modules in this library can be used to localize particles from a raw movie, link their movements across frames into trajectories, and run analyses on trajectories to detect local colocalization and interaction.
 
 # Installation
-1. Install Anaconda and git. Open Anaconda prompt.
-2. `git clone https://github.com/jungmannlab/picasso`
-3. `cd ..` into parent folder, `git clone https://github.com/GanzingerLab/SPIT`
-4. `cd SPIT` and create environment `conda env create -f=environment.yml`
-5. activate environment with `activate SPIT`
-6. build package: `cd ..` and `cd picasso` to move to picasso repository and `python setup.py install`
-7. build package:  `cd ..` and `cd SPIT` to move to SPIT repository and `python setup.py install` (or use `python setup.py develop` in case you want to work on the code)
+1. install Picasso Desktop
+2. install git and Anaconda (and GitHub Desktop)
+3. using GitHub Desktop, clone picasso `https://github.com/jungmannlab/picasso`
+4. open the Windows command line, move into the just created picasso folder (cd C:\...\Documents\GitHub\picasso) and type git checkout 491ae28 to revert picasso to the version that works with SPIT
+5. using GitHub Desktop, clone naclib `https://github.com/edovanveen/naclib` and SPIT `https://github.com/GanzingerLab/SPIT`
+6. in Anaconda prompt, move into SPIT folder (using cd ..) and create environment using conda env create -f=environment.yml
+7. activate the environment using activate SPIT
+8. then build packages:
+	8.1. move to picasso folder: cd ...Documents/Github/picasso and `pip install .`
+	8.2. move to naclib folder: cd ...Documents/Github/naclib and `pip install .`
+	8.3. move to SPIT and `pip install -e .`
+9. install Spyder in the newly created SPIT environment: `conda install spyder`
+10. finally, install lir in the SPIT environment. pip install largestinteriorrectangle
+
 
 
 # Usage
-SPIT is executable from the command line. The following modules can be either executed individually, or consecutively:
-
-**Localize** - localizes particles in frames </br>
-**Link** - links localizations into trajectories </br>
-**Colocalize** - checks for interactions between trajectories </br>
-**FRAP** - performs a FRAP analysis of a SLB </br>
-
-![Diagram explanation of SPIT](/spit_diagram.png?raw=true "Diagram explanation of SPIT")
+Coming soon
 
 ## Contributions
+Gerard Castro-Linares</br> 
 Christian Niederauer</br>
 Miles Wang-Henderson</br>
 Elia Escoffier
