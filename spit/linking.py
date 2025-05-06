@@ -40,13 +40,15 @@ def link_locs_trackpy(df_locs, search, memory):
     """
     if 't' in df_locs.columns:
         df_locs = df_locs.rename(columns={'t': 'frame'})
-
+    #imlement velocity prediction? 
+    # pred = tp.predict.NearestVelocityPredict()
+    #df_tracks  = pred.link(df_locs, search_range=search,    memory=memory,    adaptive_step=0.95,    adaptive_stop = 2,    link_strategy='hybrid')
     df_tracks = tp.link(df_locs,
                         search_range=search,
                         memory=memory,
                         adaptive_step=0.95,
                         adaptive_stop = 2,
-                        link_strategy='hybrid',
+                        link_strategy='hybrid'
                         )
 
     df_tracks = df_tracks.rename(columns={'particle': 'track.id',
