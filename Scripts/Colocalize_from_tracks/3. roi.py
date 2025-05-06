@@ -17,7 +17,7 @@ from multiprocessing import freeze_support
 
 
 def main(): 
-    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
+    directory_path = r'D:\Data\Chi_data\20250414\to_track2'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
     for image in paths_locs:
