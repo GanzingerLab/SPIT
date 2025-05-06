@@ -25,12 +25,12 @@ from multiprocessing import freeze_support
 
 class Settings:
     def __init__(self):
-        self.box = 5
+        self.box = 7
         
         self.gradient405 = 300  
-        self.gradient488 = 500 
-        self.gradient561 = 350
-        self.gradient638 = 350
+        self.gradient488 = 700 
+        self.gradient561 = 500
+        self.gradient638 = 700
          
         self.camera_info = {}
         #Set the gain of the microscope. 
@@ -44,7 +44,7 @@ class Settings:
         #'com' for tracking, 'lq' for stationary stuff     
         self.fit_method = 'lq' 
         #Pixel size to micrometers. For Annapurna ~0.09. For K2 ~0.108
-
+        self.skip = 'None'
         self.suffix = ''
         self.transform = False  #Do non-affine corrections of the localized spots if you have multiple channels.
         self.plot = True
@@ -58,7 +58,7 @@ class Settings:
         elif '405nm' in filename:
             return self.gradient405
     def get_naclib(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
-        result_txt  = read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
+        result_txt  = tools.read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
         root = os.path.dirname(__file__)
         paramfiles_path = os.path.join(root, "Registration_folder/") #This sets the folder where the naclib coefficients are. 
         #It should be in a folder called paramfile inside the folder where the script is located. 
@@ -67,7 +67,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return pd.read_csv(os.path.join(paramfiles_path, 'naclib_coefficients_K2.csv'))
     def get_px2um(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
-        result_txt  = read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
+        result_txt  = tools.read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
         root = os.path.dirname(__file__)
         paramfiles_path = os.path.join(root, "Registration_folder/") #This sets the folder where the naclib coefficients are. 
         #It should be in a folder called paramfile inside the folder where the script is located. 
@@ -79,7 +79,7 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'D:\Data\20250408_GCL009\selected2\output'
+    directory_path = r'D:\Data\Cell_experiments\RM25_SUMMARY TO TRACK'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:
@@ -87,6 +87,7 @@ def main():
             localizee(path)
     
 def localizee(folder): 
+    try:
      settings = Settings()
      transformInfo = 'False' 
      #Actually not needed, because you can only add folders, based on a function in def main: 
@@ -106,6 +107,8 @@ def localizee(folder):
          movieList = []
          filelist = []
          for i, path in enumerate(paths):
+             if settings.skip in path:
+                 break
              filelist.append(path)
              movie, info = load_movie(path)
              movieList.append(movie)
@@ -190,7 +193,7 @@ def localizee(folder):
      
              print(f'File saved to {pathOutput}')
              print('                                                        ')
-     else: 
+    except:
         # "There are no files in this subfolder, rise error"
         skippedPaths.append(folder)
         print('Skipping...\n')
