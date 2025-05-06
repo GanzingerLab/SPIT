@@ -164,8 +164,21 @@ def df_convert2px(df, px2nm=108):
 def load_raw(path, prompt_info=None):
     info = load_info(path)
     dtype = np.dtype(info[0]["Data Type"])
-    shape = (info[0]["Frames"], info[0]["Height"], info[0]["Width"])
-    movie = np.memmap(path, dtype, "r", shape=shape)
+    #shape = (info[0]["Frames"], info[0]["Height"], info[0]["Width"])
+    movie = np.memmap(path, dtype, "r")
+
+    # Assuming metadata provides width, height, and expected number of frames
+    width = info[0]["Width"]
+    height = info[0]["Height"]
+    expected_frames = info[0]["Frames"]
+    
+    # Calculate the actual number of frames
+    total_elements = movie.size
+    actual_frames = total_elements // (width * height)
+    
+    # Reshape the data
+    movie = movie.reshape((actual_frames, height, width))
+    
     if info[0]["Byte Order"] != "<":
         movie = movie.byteswap()
         info[0]["Byte Order"] = "<"
