@@ -816,7 +816,7 @@ def plot_loc_stats(df_locs, path, dt=None):
 # %% WRAPPER: Tracking stats
 
 
-def plot_track_stats(df_tracks, df_stats, df_statsF, path, dt=None):
+def plot_track_stats(df_tracks, df_stats, df_statsF, path, px2nm, dt=None):
     keep_particles = df_statsF['track.id'].values
     df_tracksF = df_tracks.loc[df_tracks['track.id'].isin(keep_particles)]
 
@@ -876,7 +876,7 @@ def plot_track_stats(df_tracks, df_stats, df_statsF, path, dt=None):
     df_tracksF_1k = df_tracksF.loc[(df_tracks.t < 100) | (
         df_tracks.t > df_tracks.t.max()-100)]
 
-    plot_tracks_filtered(df_tracks_1k, df_tracksF_1k, df_stats, path)
+    plot_tracks_filtered(df_tracks_1k, df_tracksF_1k, df_stats, path, px2nm=px2nm)
 
 
 # plot_track_stats(linked, track_stats, track_stats_filtered, path, dt=0.04)
