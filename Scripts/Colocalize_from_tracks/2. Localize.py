@@ -79,7 +79,7 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'D:\Data\Cell_experiments\RM25_SUMMARY TO TRACK'
+    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output3'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:
