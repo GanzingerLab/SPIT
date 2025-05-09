@@ -733,7 +733,6 @@ def plot_track_lengths(df_stats, dt, path=None, color='black', split=False, ax=N
         ax = f.add_subplot(111)
         ax.set_title('Track lengths \n'+os.path.split(path)[1])
         save_plot = True
-
     if weighted:
         average_length = np.average(df_stats.length, weights=df_stats.length)
         _, bins = np.histogram(df_stats.length*dt, bins='doane')
@@ -834,27 +833,27 @@ def plot_track_stats(df_tracks, df_stats, df_statsF, path, px2nm, dt=None):
             colorC = next(colors)
             df_tracksF_roi = df_tracksF.loc[df_tracksF.cell_id == roi]
             df_statsF_roi = df_statsF.loc[df_statsF.cell_id == roi]
-
-            plot_x_per_frame(df_tracksF_roi,
-                             'Tracks',
-                             dt,
-                             roll_param=10,
-                             ignore_start=0,
-                             color=colorC,
-                             split=True,
-                             ax=axs[0, 0])
-
-            plot_track_lengths(df_statsF_roi,
-                               dt,
-                               color=colorC,
-                               split=True,
-                               ax=axs[0, 1])
-
-            plot_NgT(df_tracksF_roi,
-                     dt,
-                     color=colorC,
-                     split=True,
-                     ax=axs[0, 2],)
+            if df_statsF_roi.shape[0]:
+                plot_x_per_frame(df_tracksF_roi,
+                                 'Tracks',
+                                 dt,
+                                 roll_param=10,
+                                 ignore_start=0,
+                                 color=colorC,
+                                 split=True,
+                                 ax=axs[0, 0])
+                
+                plot_track_lengths(df_statsF_roi,
+                                   dt,
+                                   color=colorC,
+                                   split=True,
+                                   ax=axs[0, 1])
+    
+                plot_NgT(df_tracksF_roi,
+                         dt,
+                         color=colorC,
+                         split=True,
+                         ax=axs[0, 2],)
 
         axs[0, 2].legend([f'roi {x}' for x in nROI], loc='lower right')
 
