@@ -41,7 +41,7 @@ class Settings:
         self.camera_info['Sensitivity'] = 0.6
         #In Picasso qe (quantum efficiency) is not used anymore. It is left for backward compatibility. 
         self.camera_info['qe'] = 0.9
-        #'com' for tracking, 'lq' for stationary stuff     
+        #'lq' for circular particles. 'com' for wierdly shaped particles.      
         self.fit_method = 'lq' 
         #Pixel size to micrometers. For Annapurna ~0.09. For K2 ~0.108
         self.skip = 'not_track'
