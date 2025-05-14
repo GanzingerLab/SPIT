@@ -27,13 +27,13 @@ class Settings:
         self.quick = False  #use the quick version? 200px squared from the center and only 500 frames. 
         self.roi = True #Do you want to filter per ROI? 
         self.suffix = '' #sufix for the name of the file, if necessary. 
-        self.fil_len = 10 #filter the length of the tracks. Tracks shorter than this ammount of frames will be filtered
-        self.fil_diff = 0.002 #Filter for immobile particles. Tracks with a diffusion coefficient smaller than this number will be filtered
+        self.fil_len = 20 #filter the length of the tracks. Tracks shorter than this ammount of frames will be filtered
+        self.fil_diff = 0.0002 #Filter for immobile particles. Tracks with a diffusion coefficient smaller than this number will be filtered
         self.tracker = 'trackpy' #Tracker algorithm to use: trackpy or swift. After talking with Chris, swift is very complicated and the focus of the developers is not 
         # really tracking, but the diffusion rates. So, swift is not implemented, and I am not sure if it will. 
     #################Tracking params############
         self.memory = 1 #max number of frames from which a particle can disappear 
-        self.search = 10 #max search range for trackpy linking in px 
+        self.search = 15 #max search range for trackpy linking in px 
     def get_px2nm(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
         result_txt  = read_result_file(file) #this opens the results.txt file to check the microscope used. 
                 #It should be in a folder called paramfile inside the folder where the script is located. 
@@ -42,7 +42,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return 108
 def main(): 
-    directory_path = r'D:\Data\20250507_GCL013\output'
+    directory_path = r'D:\Data\Tom\Test_2'
     # directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL002_Sample_from_yesterday\output\after_adding_dil2\Run00010'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
@@ -80,7 +80,7 @@ def linkk(folder):
                     # fix locIDs before they get mixed up by linking
                     df_locs = df_locs.rename_axis('locID').reset_index()
         #         # retrieve exposure time
-                resultPath = os.path.join(os.path.dirname(path), path.split('\\')[-2]+'_result.txt')
+                resultPath = '\\'.join(path.split('\\')[:-1]) + '\\' + [element for element in path.split('\\') if element.startswith('Run')][0] + '_result.txt'
                 if not settings.dt == None:
                     dt = settings.dt
                 else: 
@@ -145,7 +145,7 @@ def linkk(folder):
                 df_locs_nm.to_csv(path_nm, index=False)
                 path_plots_loc = tools.getOutputpath(path_nm, 'plots', keepFilename=True)
         
-                tau_bleach = plot_diffusion.plot_loc_stats(df_locs_nm, path_plots_loc, dt=dt)
+                # tau_bleach = plot_diffusion.plot_loc_stats(df_locs_nm, path_plots_loc, dt=dt)
         
                 # prepare rest of the paths
                 path_output = os.path.splitext(path_nm)[0] +'_'+ settings.tracker

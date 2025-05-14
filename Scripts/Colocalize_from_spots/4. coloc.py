@@ -27,7 +27,7 @@ class Settings:
             return 108
 
 def main(): 
-    directory_path = r'D:\Data\Megan\20250417_Megan-origami'
+    directory_path = r'D:\Data\Tom\Test_2'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
     for image in paths_locs:
@@ -63,13 +63,12 @@ def colocalizee(dirpath):
             else:
                 pathCh1 = glob(dirname + f'/**{ch1}*_locs.csv')[idx]
                 # print(f'\nFound a second channel for file {idx}.')
-                resultPath = os.path.join(os.path.dirname(pathCh0), pathCh0.split('\\')[-2]+'_result.txt')
+                resultPath  = '\\'.join(pathCh0.split('\\')[:-1]) + '\\' + [element for element in pathCh0.split('\\') if element.startswith('Run')][0] + '_result.txt'
                 if not settings.dt == None:
                     dt = settings.dt
                 else:
                     resultTxt = open(resultPath, 'r')
                     resultLines = resultTxt.readlines()
-                    print(resultLines)
                     if tools.find_string(resultLines, 'Interval'): 
                         interval = tools.find_string(resultLines, 'Interval').split(":")[-1].strip()
                         if interval.split(" ")[-1] == 'sec':

@@ -3,7 +3,6 @@ from glob import glob
 import traceback
 from spit import colocalize as coloc
 from spit import tools
-import yaml
 import pandas as pd
 from tqdm import tqdm
 from multiprocessing import freeze_support
@@ -62,24 +61,6 @@ def colocalize_tracks(dirpath):
                 print('--------------------------------------------------------')
             else:
                 pathCh1 = glob(dirname + f'/**{ch1}*_locs_nm_trackpy.csv')[idx]
-                # print(f'\nFound a second channel for file {idx}.')
-                if not settings.dt == None:
-                    dt = settings.dt
-                else:
-                    resultPath = os.path.join(os.path.dirname(pathCh0), pathCh0.split('\\')[-2]+'_result.txt')
-                    resultTxt = open(resultPath, 'r')
-                    resultLines = resultTxt.readlines()
-                    if tools.find_string(resultLines, 'Interval'): 
-                        interval = tools.find_string(resultLines, 'Interval').split(":")[-1].strip()
-                        if interval.split(" ")[-1] == 'sec':
-                            dt = int(float(interval.split(" ")[0]))
-                        elif interval.split(" ")[-1] == 'ms':
-                            dt = 0.001 * int(float(interval.split(" ")[0]))
-                    else:
-                        dtStr = tools.find_string(
-                            resultLines, 'Camera Exposure')[17:-1]
-                        dt = 0.001 * int(float((''.join(c for c in dtStr if (c.isdigit() or c == '.')))))
-
                 # read in the linked files
                 df_locs_ch0 = pd.read_csv(pathCh0)
                 df_locs_ch1 = pd.read_csv(pathCh1)
