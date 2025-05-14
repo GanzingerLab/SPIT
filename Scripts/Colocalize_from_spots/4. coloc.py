@@ -13,7 +13,7 @@ from picasso.io import save_info
 
 class Settings:
     def __init__(self):
-        self.ch0 = '488'#'561nm'  
+        self.ch0 = '561'#'561nm'  
         self.ch1 = '638' #'638nm'  
         self.th = 250 #Threshold distance to consider colocalization in nm. Default by Chris: 250
         self.suffix = '' #sufix for the name of the file, if necessary. 
@@ -27,7 +27,7 @@ class Settings:
             return 108
 
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi\output\Run00002'
+    directory_path = r'D:\Data\Megan\20250417_Megan-origami'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
     for image in paths_locs:
@@ -63,12 +63,13 @@ def colocalizee(dirpath):
             else:
                 pathCh1 = glob(dirname + f'/**{ch1}*_locs.csv')[idx]
                 # print(f'\nFound a second channel for file {idx}.')
+                resultPath = os.path.join(os.path.dirname(pathCh0), pathCh0.split('\\')[-2]+'_result.txt')
                 if not settings.dt == None:
                     dt = settings.dt
                 else:
-                    resultPath = os.path.join(os.path.dirname(pathCh0), pathCh0.split('\\')[-2]+'_result.txt')
                     resultTxt = open(resultPath, 'r')
                     resultLines = resultTxt.readlines()
+                    print(resultLines)
                     if tools.find_string(resultLines, 'Interval'): 
                         interval = tools.find_string(resultLines, 'Interval').split(":")[-1].strip()
                         if interval.split(" ")[-1] == 'sec':

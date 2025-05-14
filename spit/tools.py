@@ -25,7 +25,10 @@ def find_between(s, start, end):
 def find_string(string_list, string):
     # define function which finds a given word in a list of strings and returns the last one
     found_string_list = [i for i in string_list if string in i]
-    return found_string_list[len(found_string_list)-1]
+    if found_string_list:
+        return found_string_list[len(found_string_list)-1]
+    else:
+        return None
 
 
 def getExperimentName(path):
