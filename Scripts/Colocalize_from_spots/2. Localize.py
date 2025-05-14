@@ -25,12 +25,12 @@ from multiprocessing import freeze_support
 
 class Settings:
     def __init__(self):
-        self.box = 5
+        self.box = 7
         
         self.gradient405 = 300  
-        self.gradient488 = 800 
-        self.gradient561 = 800
-        self.gradient638 = 800
+        self.gradient488 = 700 
+        self.gradient561 = 600
+        self.gradient638 = 600
          
         self.camera_info = {}
         #Set the gain of the microscope. 
@@ -39,12 +39,12 @@ class Settings:
         self.camera_info['Baseline'] = 100
         #Sensitivity is the conversion factor (electrons per analog-to-digital (A/D) count)
         self.camera_info['Sensitivity'] = 0.6
-        #In Picasso qe (quantum efficiency) is not used anymore. It is left for bacward compatibility. 
+        #In Picasso qe (quantum efficiency) is not used anymore. It is left for backward compatibility. 
         self.camera_info['qe'] = 0.9
         #'com' for tracking, 'lq' for stationary stuff     
-        self.fit_method = 'com' 
+        self.fit_method = 'lq' 
         #Pixel size to micrometers. For Annapurna ~0.09. For K2 ~0.108
-
+        self.skip = 'not_track'
         self.suffix = ''
         self.transform = False  #Do non-affine corrections of the localized spots if you have multiple channels.
         self.plot = True
@@ -67,9 +67,8 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return pd.read_csv(os.path.join(paramfiles_path, 'naclib_coefficients_K2.csv'))
     def get_px2um(self, file): #if self.transform = True, this will get the correct naclib coefficients (Annapurna VS K2)
-        result_txt  = tools.read_result_file('\\'.join(file.split('\\')[:-1])+'\\'+file.split('\\')[-2]+'_result.txt') #this opens the results.txt file to check the microscope used. 
-        root = os.path.dirname(__file__)
-        paramfiles_path = os.path.join(root, "Registration_folder/") #This sets the folder where the naclib coefficients are. 
+        result_txt  = tools.read_result_file('\\'.join(file.split('\\')[:-1]) + '\\' + 
+                                             [element for element in file.split('\\') if element.startswith('Run')][0] + '_result.txt') #this opens the results.txt file to check the microscope used. 
         #It should be in a folder called paramfile inside the folder where the script is located. 
         if result_txt['Computer'] == 'ANNAPURNA': 
             return 0.09
@@ -79,7 +78,7 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi'
+    directory_path = r'D:\Data\Tom\Test_1\Run00035'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:
@@ -87,6 +86,7 @@ def main():
             localizee(path)
     
 def localizee(folder): 
+    # try:
      settings = Settings()
      transformInfo = 'False' 
      #Actually not needed, because you can only add folders, based on a function in def main: 
@@ -106,6 +106,8 @@ def localizee(folder):
          movieList = []
          filelist = []
          for i, path in enumerate(paths):
+             if settings.skip in path:
+                 break
              filelist.append(path)
              movie, info = load_movie(path)
              movieList.append(movie)
@@ -190,11 +192,22 @@ def localizee(folder):
      
              print(f'File saved to {pathOutput}')
              print('                                                        ')
-     else: 
-        # "There are no files in this subfolder, rise error"
-        skippedPaths.append(folder)
-        print('Skipping...\n')
-        print('--------------------------------------------------------')
+    # except:
+    #     # "There are no files in this subfolder, rise error"
+    #     skippedPaths.append(folder)
+    #     print('Skipping...\n')
+    #     print('--------------------------------------------------------')
+    
+def read_result_file(file):
+    with open(file, 'r') as resultTxt:
+        resultLines = resultTxt.readlines()
+    resultdict = {}
+    for line in resultLines:
+        if ': ' in line:
+            key, value = line.split(': ', 1)
+            if key not in resultdict:
+                resultdict[key] = value.strip()
+    return resultdict
 
 if __name__ == '__main__':
     freeze_support()

@@ -42,7 +42,7 @@ class Settings:
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             return 108
 def main(): 
-    directory_path = r'D:\Data\20250507_GCL013\output\CD58_pMHC\Run00001'
+    directory_path = r'D:\Data\Tom\Test_2'
     # directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL002_Sample_from_yesterday\output\after_adding_dil2\Run00010'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
@@ -53,7 +53,7 @@ def main():
 
 
 def linkk(folder):
-    # try:
+    try:
         settings = Settings()    
         if os.path.isdir(folder):
             if settings.coloc:
@@ -66,7 +66,7 @@ def linkk(folder):
     
         # main loop
         for idx, path in tqdm(enumerate(paths), desc='Linking localizations...', total=len(paths)):
-            # try:
+            try:
                 if settings.roi and 'roi' not in path:
                     skip = path.split('\\')[-1]
                     print(f"\n\n Skipping {skip} bacause it is not filtered by roi and within Settings self.roi == {settings.roi}\n")
@@ -80,7 +80,7 @@ def linkk(folder):
                     # fix locIDs before they get mixed up by linking
                     df_locs = df_locs.rename_axis('locID').reset_index()
         #         # retrieve exposure time
-                resultPath = os.path.join(os.path.dirname(path), path.split('\\')[-2]+'_result.txt')
+                resultPath = '\\'.join(path.split('\\')[:-1]) + '\\' + [element for element in path.split('\\') if element.startswith('Run')][0] + '_result.txt'
                 if not settings.dt == None:
                     dt = settings.dt
                 else: 
@@ -192,20 +192,20 @@ def linkk(folder):
                 if not settings.coloc:
                     df_statsF = link.filter_df(df_stats, filter_length=settings.fil_len, filter_D=settings.fil_diff)
                     plot_diffusion.plot_track_stats(df_tracks, df_stats, df_statsF, path_plots, dt=dt, px2nm = px2nm)
-            # except Exception as e:
-            #     print(f"Error processing {path}: {e}")
-            #     print('I do not think you have many tracks... OR self.search is too large')
-            #     skippedPaths.append(path)
-            #     continue
-    # except Exception as e:
-    #     print('Error')
-    # print('--------------------------------------------------------')
-    # print('/////////////////////FINISHED//////////////////////////')
-    # print('--------------------------------------------------------')
-    # if skippedPaths:
-    #     print('Analysis failed on paths:')
-    #     for skippedPath in skippedPaths:
-    #         print(f'\n{skippedPath}')
+            except Exception as e:
+                print(f"Error processing {path}: {e}")
+                print('I do not think you have many tracks... OR self.search is too large')
+                skippedPaths.append(path)
+                continue
+    except Exception as e:
+        print('Error')
+    print('--------------------------------------------------------')
+    print('/////////////////////FINISHED//////////////////////////')
+    print('--------------------------------------------------------')
+    if skippedPaths:
+        print('Analysis failed on paths:')
+        for skippedPath in skippedPaths:
+            print(f'\n{skippedPath}')
 
 def read_result_file(file):
     with open(file, 'r') as resultTxt:
