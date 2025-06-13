@@ -198,6 +198,7 @@ def plot_loc_stats(df_locs, path, combFit=False, centersInit=(1000, 2000)):
 
     fig.tight_layout()
     fig.savefig(path+'_localization.png', dpi=200)
+    plt.close()
 
 
 # %% Gaussian comb fit on photon levels
