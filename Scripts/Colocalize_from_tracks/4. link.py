@@ -46,7 +46,6 @@ def main():
     # directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\GCL002_Sample_from_yesterday\output\after_adding_dil2\Run00010'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
-    print(paths_locs)
     for image in paths_locs:
         if os.path.isdir(image):
             linkk(image)
