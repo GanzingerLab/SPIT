@@ -25,7 +25,7 @@ class Settings:
         self.registration_folder = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\regis' #Folder containing the H-matrices and crop coordinates
         #needed for the alignment of the channels
         self.verticalROI = [0, 1100] #Specify the heigth of the channels that you want to use. I am pretty sure that if we set it larger, it still does it correctly. 
-        self.to_keep = [0, 200]  #number of frames to procees. [0, None] means all frames, if you want to change it, set the specific number ([0:200] would be the first 
+        self.to_keep = [0, None]  #number of frames to procees. [0, None] means all frames, if you want to change it, set the specific number ([0:200] would be the first 
         #200 frames while [300:None] would be from frame 301 until the end)
         
         #ANNAPURNA
@@ -86,7 +86,7 @@ class Settings:
         return xlim, ylim
 
 def main(): 
-    directory_path = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\example data\from_chi'
+    directory_path = r'D:\Data\test_error_result_files'
     pathsRaw = glob(directory_path + '/**/**.raw', recursive=True) #Check for each .row file in the folder and subfolders. 
     directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
     for path in directory_names:
@@ -95,18 +95,39 @@ def main():
     print('########Finished########')
 def preprocess(fol, directory_path):            
     settings = Settings() #initialize the settings defined above.
-    registration_folder  = settings.registration_folder
     verticalROI = settings.verticalROI
     to_keep = settings.to_keep
     
+    base_name = os.path.basename(fol)
     result_file = fol+'\\' +fol.split("\\")[-1]+'_result.txt'  #get direction result.txt file
     datalog_file = fol+'\\' +fol.split("\\")[-1]+'_datalog.txt' #get direction of datalog.txt file. 
+    used_fallback = False
+    if not (os.path.exists(result_file) and os.path.exists(datalog_file)):
+        try:
+            result_file, datalog_file = find_alternative_result_file(fol)
+            used_fallback = True
+        except FileNotFoundError as e:
+            print(f"[Skip] {fol} — {e}")
+            return
     result_txt=tools.read_result_file(result_file) #get a dictionary with the information in the result.txt file. 
     save_folder = os.path.join(directory_path, 'output', fol.replace(directory_path, '')[1:]) #define save folder. 
     if not os.path.exists(save_folder): #create the save folder if it does not exist. 
         os.makedirs(save_folder)
-    shutil.copy(result_file, save_folder) #copy result.txt and datalog.txt files into the save folder. 
-    shutil.copy(datalog_file, save_folder)
+    if used_fallback:
+        # Rename fallback files to match current folder name
+        new_result_file = os.path.join(save_folder, base_name + '_result.txt')
+        new_datalog_file = os.path.join(save_folder, base_name + '_datalog.txt')
+        shutil.copy(result_file, new_result_file)
+        shutil.copy(datalog_file, new_datalog_file)
+        fallback_info_path = os.path.join(save_folder, 'FALLBACK_INFO.txt')
+        with open(fallback_info_path, 'w') as f:
+            f.write("Fallback result/datalog files were used.\n")
+            f.write(f"Source folder: {os.path.dirname(result_file)}\n")
+            f.write(f"Copied to: {save_folder}\n")
+    else:
+        # Keep original file names
+        shutil.copy(result_file, save_folder)
+        shutil.copy(datalog_file, save_folder)
     #check whether Annapurna or K2 was used and initialize the neceesary variables depening on that
     if result_txt['Computer'] == 'ANNAPURNA': 
         x_coords = settings.x_coords_annapurna
@@ -156,5 +177,25 @@ def preprocess(fol, directory_path):
                 save = os.path.join(save_folder, ch+'.tif') #save the image as .tif
                 imageio.mimwrite(save, cropped_im)
     print('Finished with files in', fol.replace(directory_path, '')[1:])
+def find_alternative_result_file(folder):
+    """
+    Search one level up from `folder` for any folder containing both *_result.txt and *_datalog.txt files.
+    """
+    parent = os.path.dirname(folder)
+
+    # Look for all *_result.txt files one level down from the parent directory
+    result_files = glob(os.path.join(parent, '*', '*_result.txt'))
+
+    for result_file in result_files:
+        sib_folder = os.path.dirname(result_file)
+        base = os.path.basename(sib_folder)
+        datalog_file = os.path.join(sib_folder, base + '_datalog.txt')
+        
+        if os.path.exists(datalog_file):
+            print(f"[Fallback] Found result files in: {sib_folder} for {folder}")
+            return result_file, datalog_file
+
+    raise FileNotFoundError("No valid *_result.txt found within the same parent folder. Copy one yourself.")
 if __name__ == '__main__':
     main()
+
