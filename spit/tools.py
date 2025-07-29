@@ -185,7 +185,9 @@ def load_raw(path, prompt_info=None):
     if info[0]["Byte Order"] != "<":
         movie = movie.byteswap()
         info[0]["Byte Order"] = "<"
-    return movie, info
+    movie_array = np.array(movie)
+    del movie
+    return movie_array, info
 
 
 def load_info(path, qt_parent=None):

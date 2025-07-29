@@ -4,8 +4,6 @@ Created on Wed Feb 26 10:54:26 2025
 
 @author: castrolinares
 """
-
-
 import os
 from glob import glob
 import traceback
@@ -29,8 +27,8 @@ class Settings:
         
         self.gradient405 = 300  
         self.gradient488 = 700 
-        self.gradient561 = 600
-        self.gradient638 = 600
+        self.gradient561 = 330
+        self.gradient638 = 350
          
         self.camera_info = {}
         #Set the gain of the microscope. 
@@ -43,7 +41,6 @@ class Settings:
         self.camera_info['qe'] = 0.9
         #'lq' for circular particles. 'com' for wierdly shaped particles.      
         self.fit_method = 'lq' 
-        #Pixel size to micrometers. For Annapurna ~0.09. For K2 ~0.108
         self.skip = 'not_track'
         self.suffix = ''
         self.transform = False  #Do non-affine corrections of the localized spots if you have multiple channels.
@@ -78,11 +75,14 @@ class Settings:
 
 
 def main(): 
-    directory_path = r'D:\Data\Tom\Test_1\Run00035'
+    directory_path = r'D:\Data\Chi_data\first data\output2\Run00002'
     pathstif = glob(directory_path + '/**/**.tif', recursive=True)
     paths_im = list(set(os.path.dirname(file) for file in pathstif))
     for path in paths_im:
-        if os.path.isdir(path):
+        print(path)
+        if 'cluster_analysis' in path:
+            continue
+        elif os.path.isdir(path):
             localizee(path)
     
 def localizee(folder): 
@@ -106,8 +106,11 @@ def localizee(folder):
          movieList = []
          filelist = []
          for i, path in enumerate(paths):
-             if settings.skip in path:
+             print(path)
+             if settings.skip in path or 'cluster_analysis' in path:
+                 skippedPaths.append(path)
                  break
+             
              filelist.append(path)
              movie, info = load_movie(path)
              movieList.append(movie)
@@ -189,9 +192,11 @@ def localizee(folder):
                  plotPath = tools.getOutputpath(
                      pathOutput, 'plots', keepFilename=True)
                  localize.plot_loc_stats(df_locs, plotPath)
-     
+
+            
              print(f'File saved to {pathOutput}')
              print('                                                        ')
+             
     # except:
     #     # "There are no files in this subfolder, rise error"
     #     skippedPaths.append(folder)

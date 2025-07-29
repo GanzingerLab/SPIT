@@ -27,7 +27,7 @@ class Settings:
             return 108
 
 def main(): 
-    directory_path = r'D:\Data\Tom\Test_2'
+    directory_path = r'D:\Data\Tom\Test_1\Run00035'
     pathscsv = glob(directory_path + '/**/**.csv', recursive=True)
     paths_locs = list(set(os.path.dirname(file) for file in pathscsv))
     for image in paths_locs:
