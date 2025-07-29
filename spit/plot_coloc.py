@@ -62,14 +62,32 @@ def plot_colocs_locs_per_frame(df_locs_ch0, df_locs_ch1, df_colocs, dt, roll_par
         save_plot = True
 
     # Prepare data
-    locsCh0_per_frame = df_locs_ch0.pivot_table(columns=['t'], aggfunc='size')
-    locsCh1_per_frame = df_locs_ch1.pivot_table(columns=['t'], aggfunc='size')
-    colocs_per_frame = df_colocs.pivot_table(columns=['t'], aggfunc='size')
+    # locsCh0_per_frame = df_locs_ch0.pivot_table(columns=['t'], aggfunc='size')
+    # locsCh1_per_frame = df_locs_ch1.pivot_table(columns=['t'], aggfunc='size')
+    frames_idx = range(max(df_locs_ch0.t.max(), df_locs_ch1.t.max()) + 1)
+
+    # Count per frame and reindex to fill missing frames with 0
+    locsCh0_per_frame = df_locs_ch0.groupby('t').size().reindex(frames_idx, fill_value=0)
+    locsCh1_per_frame = df_locs_ch1.groupby('t').size().reindex(frames_idx, fill_value=0)
+    colocs_per_frame = df_colocs.groupby('t').size().reindex(frames_idx, fill_value=0)
+    # Ensure it's a proper Series indexed by frame (t)
+    if isinstance(locsCh1_per_frame, pd.Series):
+        locsCh1_per_frame.index.name = 't'
+    else:
+        locsCh1_per_frame = locsCh1_per_frame.T.squeeze()
+        locsCh1_per_frame.index.name = 't'
+    # colocs_per_frame = df_colocs.pivot_table(columns=['t'], aggfunc='size')
 
     # Fill frame rows with 0 where there is no coloc instead of just leaving the row out
-    frames = pd.Series(np.zeros(max(df_locs_ch0.t.max(), df_locs_ch1.t.max())))
+    frames = pd.Series(np.zeros(max(df_locs_ch0.t.max(), df_locs_ch1.t.max()) + 1))
+
     frames.index.name = 't'
-    colocs_per_frame = colocs_per_frame.combine_first(frames)
+    # colocs_per_frame = colocs_per_frame.combine_first(frames)
+    # if not frames.empty and not frames.dropna(how='all').empty:
+    #     if colocs_per_frame.empty or colocs_per_frame.dropna(how='all').empty:
+    #         colocs_per_frame = frames.copy()
+    #     else:
+    #         colocs_per_frame = colocs_per_frame.combine_first(frames)
 
     ax.plot(colocs_per_frame.rolling(roll_param).mean(),
             '-', c='darkorange', alpha=1)

@@ -600,7 +600,6 @@ class SPIT_Run:
         # format paths according to a specified ending, e.g. "488nm_locs.csv"
         ch0 = settings.ch0
         ch1 = settings.ch1
-
         # getting all filenames of the first channel, later look for corresponding second channel files
         if os.path.isdir(self.image_folder):
             print('Analyzing directory...')
@@ -644,7 +643,7 @@ class SPIT_Run:
                     df_locs_ch0 = pd.read_csv(pathCh0)
                     df_locs_ch1 = pd.read_csv(pathCh1)
                     # pixels to nm
-                    px2nm = self.settings.get_px2nm()
+                    px2nm = self.settings.get_px2nm(pathCh0)
                     df_locs_ch0 = tools.df_convert2nm(df_locs_ch0, px2nm)
                     df_locs_ch1 = tools.df_convert2nm(df_locs_ch1, px2nm)
 
@@ -659,10 +658,10 @@ class SPIT_Run:
                     df_colocs_px = tools.df_convert2px(df_colocs, px2nm)
                     df_colocs_px.to_csv(pathOutput + '_colocs.csv', index=False)
                     print('Calculating and plotting colocalization analysis.')
-
-                    plot_coloc.plot_coloc_stats(df_locs_ch0, df_locs_ch1, df_colocs,
-                                                threshold=settings.th,
-                                                path=pathPlots, dt=dt, roll_param=5)
+                    if not df_colocs.empty:
+                        plot_coloc.plot_coloc_stats(df_locs_ch0, df_locs_ch1, df_colocs,
+                                                    threshold=settings.th,
+                                                    path=pathPlots, dt=dt, roll_param=5)
                     info_file = "\\".join(pathCh0.split('\\')[:-1]) +"\\"+ pathCh0.split('\\')[-1].split('.')[0]+'.yaml'
                     # export parameters to yaml
                     infoNew = tools.load_info(info_file)
