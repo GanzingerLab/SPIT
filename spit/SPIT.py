@@ -20,8 +20,8 @@ import pandas as pd
 import imageio
 import yaml
 from tqdm import tqdm
-
-
+import tifffile as tiff
+from scipy.ndimage import affine_transform
 from picasso.io import load_movie, save_info
 from picasso.localize import (
     get_spots,
@@ -644,7 +644,7 @@ class SPIT_Run:
                     df_locs_ch0 = pd.read_csv(pathCh0)
                     df_locs_ch1 = pd.read_csv(pathCh1)
                     # pixels to nm
-                    px2nm = self.settings.get_px2nm(resultPath)
+                    px2nm = self.settings.get_px2nm()
                     df_locs_ch0 = tools.df_convert2nm(df_locs_ch0, px2nm)
                     df_locs_ch1 = tools.df_convert2nm(df_locs_ch1, px2nm)
 
@@ -829,3 +829,396 @@ class SPIT_Dataset:
                 to_process = SPIT_Run(path, self.settings, directory_path)
                 to_process.full_analysis_ROI(mode = mode)
         print('########Finished########')
+class localize_tiff_run:
+    def __init__(self, folder, settings, output_folder = None):
+        self.folder = folder
+        self.settings = settings
+        if output_folder is None:
+            self.output_folder = folder
+        else:
+            self.output_folder = output_folder
+        self.image_folder = os.path.join(self.output_folder, 'output', self.folder.replace(self.output_folder, '')[1:])
+    def affine_transform(self):
+        settings2 = self.settings.registration_settings
+        # registration_folder  = settings2.registration_folder
+        verticalROI = settings2.verticalROI
+        if not os.path.exists(self.image_folder): #create the save folder if it does not exist. 
+            os.makedirs(self.image_folder)
+        #check whether Annapurna or K2 was used and initialize the neceesary variables depening on that
+        if settings2.microscope == 'ANNAPURNA': 
+            x_coords = settings2.x_coords_annapurna_tiff
+            Hl  = self.settings.load_H_left_annapurna()
+            Hr = self.settings.load_H_right_annapurna()
+            xlim, ylim = self.settings.load_crop_annapurna()
+        elif settings2.microscope == 'K2':
+            x_coords = settings2.x_coords_K2_tiff
+            Hl  = self.settings.load_H_left_K2()
+            Hr = self.settings.load_H_right_K2()
+            xlim, ylim = self.settings.load_crop_K2()
+        #check the imaging mode used: sequence or record (a.k.a VCR). 
+        pattern = settings2.channels #get the lasers that you used. 
+        file_names =  glob(self.folder + '/**/**.tif', recursive=True)#open the raw file
+        for file_name in file_names:
+            d = self._load_tif(file_name)
+            for ch in pattern: #for each laser used
+                image = np.copy(d[verticalROI[0]:verticalROI[1], x_coords[ch][0]:x_coords[ch][1]]) #crop the specific channel
+                if ch == 'r_ch':#if the laser used is 405 or 488, use the right H matrix to correct. 
+                    im = self._h_affine_transform(image, Hr)
+                elif ch == 'l_ch':#if the laser used is the 638. used the left H matrix to correct. 
+                    im = self._h_affine_transform(image, Hl)
+                elif ch == 'm_ch':#If none of them have been used (561 laser has been used), do not modify the image
+                    im = np.copy(image)
+                cropped_im  = im[ylim[0]:ylim[1], xlim[0]:xlim[1]].astype(np.uint16) #crop the image in the proper cropping coordinates (after the correction). 
+                save = os.path.join(self.image_folder, file_name.split('\\')[-1].split('.')[0]+'_'+ch+'.tif') #save the image as .tif
+                imageio.mimwrite(save, [cropped_im])
+        
+        print('########Finished########')
+    def localize(self):
+        transformInfo = 'False' 
+        #Actually not needed, because you can only add folders, based on a function in def main: 
+        if os.path.isdir(self.image_folder): 
+           print('Analyzing directory', self.image_folder)
+           pathsTif = glob(self.image_folder + '/*.tif', recursive=True)
+           paths = pathsTif
+        # subdirectories = list({os.path.dirname(file_path) for file_path in paths})
+           print(f'A total of {len(paths)} files detected...')
+           print('--------------------------------------------------------')
+        else:
+            print(f'{self.image_folder} is not a folder')
+            
+        # If any of the folders does not contain tif or raw images, it will be skipped and the folder will be saved in the following list:
+        skippedPaths = []  
+        if paths: 
+            movieList = []
+            filelist = []
+            for i, path in enumerate(paths):
+                filelist.append(path)
+                movie, info = load_movie(path)
+                movieList.append(movie)
+                area = info[0]['Width']*info[0]['Height']*self.settings.get_px2um_tiffs()*self.settings.get_px2um_tiffs()
+                gradient = self.settings.gradient_tiffs(path)
+                print(path)
+                print(f'Localizing file {path}')
+                print('--------------------------------------------------------')
+                print('gradient:', self.settings.gradient_tiffs(path))
+                
+                #Localize spots in the images based on the chosen fit-method
+                current, futures = identify_async(movie, gradient, self.settings.localization_settings.box)
+                ids = identifications_from_futures(futures)     
+                box = self.settings.localization_settings.box
+                camera_info = self.settings.localization_settings.camera_info
+                if self.settings.localization_settings.fit_method == 'lq':
+                    spots = get_spots(movie, ids, box, camera_info)
+                    theta = gausslq.fit_spots_parallel(spots, asynch=False)
+                    locs = gausslq.locs_from_fits(ids, theta, box, camera_info['Gain'])
+                elif self.settings.localization_settings.fit_method == 'com':
+                    spots = get_spots(movie, ids, box,camera_info)
+                    theta = avgroi.fit_spots_parallel(spots, asynch=False)
+                    locs = avgroi.locs_from_fits(ids, theta, box, camera_info['Gain'])
+                else:
+                    print('This should never happen... Please, set a proper method: com for moving particles, lq for moving stuff')
+                #save the localizations in a dataframe        
+                df_locs = pd.DataFrame(locs)
+                # Compatibility with Swift
+                df_locs = df_locs.rename(columns={'frame': 't', 'photons': 'intensity'})
+    
+                # adding localization precision, nearest neighbor, change photons, add cell_id column
+                df_locs['loc_precision'] = df_locs[['lpx', 'lpy']].mean(axis=1)
+                df_locs['cell_id'] = 0
+
+                # Non-affine correction only makes sense if we are dealing with two/three channel data. If you do not have these or want to update them, 
+                #use get_non-affine_coefs.py. 
+                if self.settings.localization_settings.transform:
+                    #open non-affine coefficients. 
+                    naclibCoefficients = self.settings.get_naclib_tiffs(path)
+                    #transform localizations based on the coefficients assigned to channel 2 (488nm or 405nm channel)
+                    if '488nm' in path or '405nm' in path:
+                        df_locs, dataset = localize.transform_locs(df_locs,
+                                                                   naclibCoefficients,
+                                                                   channel=2,
+                                                                   fig_size=list(movie[0].shape[::-1]))
+                        transformInfo = 'true, based on '+str(dataset)
+                   #transform localizations based on the coefficients assigned to channel 0 (638nm channel)
+                    elif '638nm' in path:
+                        df_locs, dataset = localize.transform_locs(df_locs,
+                                                                   naclibCoefficients,
+                                                                   channel=0,
+                                                                   fig_size=list(movie[0].shape[::-1]))
+                        transformInfo = 'true, based on '+str(dataset)
+                    #do not modify 531nm channel, since it is the reference channel.
+                    else:
+                        transformInfo = 'false, reference channel'
+               #update info (.yaml)            
+                localize_info = {
+                    'Generated by': 'Picasso Localize',
+                    'Box Size': self.settings.localization_settings.box,
+                    'Min. Net Gradient': gradient,
+                    'Color correction': transformInfo,
+                    'Area': float(area),
+                    'Fit method': self.settings.localization_settings.fit_method
+                }
+                info[0]["Byte Order"] = "<" #I manually checked with https://hexed.it/ that the tif files are still saved as little-endian
+                infoNew = info.copy()
+                infoNew.append(localize_info)
+                #get saving folder
+                base, ext = os.path.splitext(path)
+     
+                pathChannel = base
+    
+                pathOutput = pathChannel + self.settings.localization_settings.suffix + '_locs.csv'
+                #save localizations and ifnromation
+                df_locs.to_csv(pathOutput, index=False)
+                save_info(os.path.splitext(pathOutput)[0]+'.yaml', infoNew)
+        
+                print(f'File saved to {pathOutput}')
+                print('                                                        ')
+        else: 
+           # "There are no files in this subfolder, rise error"
+           skippedPaths.append(self.folder)
+           print('Skipping...\n')
+           print('--------------------------------------------------------')
+    def roi(self):
+        '''Restrict localizations to ROIs'''
+
+        # format filepaths
+        if os.path.isdir(self.image_folder):
+            print('Analyzing directory...')
+            paths = glob(self.image_folder + '/*ch_locs.csv')
+
+        # initialize placeholders
+        skippedPaths = []
+
+        # print all kept paths
+        for path in paths:
+            print(path)
+        print(f'A total of {len(paths)} files detected...')
+        print('--------------------------------------------------------')
+        self.locs_roi = {}
+        # main loop
+        for idx, path in tqdm(enumerate(paths), desc='Saving new loc-files...', total=len(paths)):
+            print('--------------------------------------------------------')
+            print(f'Running file {path}')
+            try:
+                (df_locs, info) = tools.load_locs(path)
+                # Look for ROI paths
+                pathsROI = glob(os.path.dirname(path) + '/*.roi', recursive=False)
+                print(f'Found {len(pathsROI)} ROI.')
+
+                dict_roi = {'cell_id': [], 'path': [], 'contour': [],
+                            'area': [], 'roi_mask': [], 'centroid': []}
+                
+                # this stuff needs to go into tools
+                df_locs = df_locs.drop('cell_id', axis=1)
+                for idx, roi_path in enumerate(pathsROI):
+                    roi_contour = tools.get_roi_contour(roi_path)
+                    dict_roi['cell_id'].append(idx)
+                    dict_roi['path'].append(roi_path)
+                    dict_roi['contour'].append(roi_contour)
+                    dict_roi['area'].append(tools.get_roi_area(roi_contour))
+                    dict_roi['roi_mask'].append(
+                        tools.get_roi_mask(df_locs, roi_contour))
+                    dict_roi['centroid'].append(
+                        tools.get_roi_centroid(roi_contour))
+
+                df_roi = pd.DataFrame(dict_roi)
+                df_locsM = pd.concat([df_locs[roi_mask] for roi_mask in df_roi.roi_mask], keys=list(
+                    np.arange((df_roi.cell_id.size))))
+
+                df_locsM.index = df_locsM.index.set_names(['cell_id', None])
+                df_locsM = df_locsM.reset_index(level=0)
+                df_locsM = df_locsM.sort_values(['cell_id', 't'])
+                df_locsM = df_locsM.drop_duplicates(subset=['x', 'y'])  # if ROIs overlap
+                df_locs = df_locsM
+                # get right output paths
+                pathOutput = path.replace('locs.csv', 'roi_locs.csv')
+                df_locs.to_csv(pathOutput, index=False)
+                ch = pathOutput.split('\\')[-1].split('_')[-3]
+                self.locs_roi[ch] = df_locs
+                roi_info = {'Cell ROIs': str(df_roi.cell_id.unique())}
+                infoNew = info.copy()
+                infoNew.append(roi_info)
+                save_info(os.path.splitext(pathOutput)[0] + '.yaml', infoNew)
+            except Exception:
+                skippedPaths.append(path)
+
+                print('--------------------------------------------------------')
+                print(f'Path {path} could not be analyzed. Skipping...\n')
+                traceback.print_exc()
+
+        print('                                                        ')
+        print('--------------------------------------------------------')
+        print('/////////////////////FINISHED//////////////////////////')
+        print('--------------------------------------------------------')
+        if skippedPaths:
+            print('Skipped paths:')
+            for skippedPath in skippedPaths:
+                print(f'\n{skippedPath}\n')
+    def colocalize(self):
+        settings = self.settings.coloc_spots_settings
+        # format paths according to a specified ending, e.g. "488nm_locs.csv"
+        ch0 = settings.ch0_tiffs
+        ch1 = settings.ch1_tiffs
+
+        # getting all filenames of the first channel, later look for corresponding second channel files
+        if os.path.isdir(self.image_folder):
+            print('Analyzing directory...')
+            pathsCh0 = glob(self.image_folder + f'//**//*{ch0}*_locs.csv', recursive=True)
+            print(f'Found {len(pathsCh0)} files for channel 0...')
+            # for path in pathsCh0:
+            #     print(path)
+        else:
+            raise FileNotFoundError('Directory not found')
+        print('--------------------------------------------------------')
+        skippedPaths = []
+        # main loop
+        for idx, pathCh0 in tqdm(enumerate(pathsCh0), desc='Looking for colocalizations...'):
+            print(pathCh0)
+            try:
+                dirname = os.path.dirname(pathCh0)
+                if ch1 == None:
+                    raise FileNotFoundError('Second channel not declared.')
+                    print('--------------------------------------------------------')
+                else:
+                    pathCh1 = glob(dirname + f'/**{ch1}*_locs.csv')[idx]
+                    # print(f'\nFound a second channel for file {idx}.')
+                    print(pathCh0)
+                    print(pathCh1)
+                    # read in the linked files
+                    df_locs_ch0 = pd.read_csv(pathCh0)
+                    df_locs_ch1 = pd.read_csv(pathCh1)
+                    # pixels to nm
+                    px2nm = self.settings.get_px2nm_tiffs()
+                    df_locs_ch0 = tools.df_convert2nm(df_locs_ch0, px2nm)
+                    df_locs_ch1 = tools.df_convert2nm(df_locs_ch1, px2nm)
+
+        #             # get colocalizations
+                    df_colocs = coloc.colocalize_from_locs(df_locs_ch0, df_locs_ch1, threshold_dist=settings.th)
+
+        #             # get right output paths
+                    pathOutput = os.path.splitext(pathCh0)[0][:-5] + settings.suffix
+                    # pathPlots = tools.getOutputpath(pathCh0, 'plots', keepFilename=True)[:-9] + settings.suffix
+
+                    print('Saving colocalizations...')
+                    df_colocs_px = tools.df_convert2px(df_colocs, px2nm)
+                    df_colocs_px.to_csv(pathOutput + '_colocs.csv', index=False)
+                    print('Calculating and plotting colocalization analysis.')
+
+                    info_file = "\\".join(pathCh0.split('\\')[:-1]) +"\\"+ pathCh0.split('\\')[-1].split('.')[0]+'.yaml'
+                    # export parameters to yaml
+                    infoNew = tools.load_info(info_file)
+                    infoNew.append(vars(settings))
+                    
+                    save_info(pathOutput + '_colocs.yaml', infoNew)
+
+            except Exception:
+                skippedPaths.append(pathCh0)
+                print('--------------------------------------------------------')
+                print(f'Path {pathCh0} could not be analyzed. Skipping...\n')
+                traceback.print_exc()
+
+            
+
+        print('                                                        ')
+
+        print('--------------------------------------------------------')
+        print('/////////////////////FINISHED//////////////////////////')
+        print('--------------------------------------------------------')
+        if skippedPaths:
+            print('Skipped paths:')
+            for skippedPath in skippedPaths:
+                print(f'\n{skippedPath}\n')
+    def full_analysis_noROI(self, mode = 'tracks'):
+        original_roi = self.settings.link_settings.roi
+        self.settings.link_settings.roi = False
+        self.affine_transform()
+        self.localize()
+        self.colocalize()
+        self.settings.link_settings.roi = original_roi
+    def full_analysis_ROI(self, mode = 'tracks'):
+        pathsROI = glob(self.image_folder + '/*.roi', recursive=False)
+        if not pathsROI:
+            print('Be aware that for this mode you first need to do the .affine_transform and then manually draw ROIs with imageJ freehand tool, and save them as roiX.roi where X is a number starting by 0 and going up to as many ROIs there are')
+        else:
+            original_roi = self.settings.link_settings.roi
+            self.settings.link_settings.roi = True
+            self.localize()
+            self.roi()
+            self.colocalize()
+            self.settings.link_settings.roi = original_roi
+    def _load_tif(self, file):
+        '''
+        Load .tif file.
+        '''
+        ######
+        with tiff.TiffFile(file) as ff:
+            data = ff.asarray()
+        return data  
+    def _h_affine_transform(self, image, H):
+        """
+        Apply an affine transformation.
+        """
+        return affine_transform(image, H[:2, :2], (H[0, 2], H[1, 2]))  
+        
+        
+class localize_tiff_dataset:
+    def __init__(self, folder, settings):
+        self.folder = folder
+        self.settings = settings
+    def affine_transform(self):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.tif', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path) and 'output' not in path:
+                to_process = localize_tiff_run(path, self.settings, directory_path)
+                to_process.affine_transform()
+        print('########Finished########')
+    def localize(self):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.tif', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path) and 'output' not in path:
+                to_process = localize_tiff_run(path, self.settings, directory_path)
+                to_process.localize()
+        print('########Finished########')
+    def roi(self):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.tif', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path) and 'output' not in path:
+                print(path)
+                to_process = localize_tiff_run(path, self.settings, directory_path)
+                to_process.roi()
+        print('########Finished########')
+    def colocalize(self):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.tif', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path) and 'output' not in path:
+                print(path)
+                to_process = localize_tiff_run(path, self.settings, directory_path)
+                to_process.colocalize()
+        print('########Finished########')
+    def full_analysis_noROI(self, mode = 'tracks'):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.tif', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path) and 'output' not in path:
+                to_process = localize_tiff_run(path, self.settings, directory_path)
+                to_process.full_analysis_noROI(mode = mode)
+        print('########Finished########')
+    def full_analysis_ROI(self, mode = 'tracks'):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.tif', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path) and 'output' not in path:
+                print(f"Analyszing {path}")
+                to_process = localize_tiff_run(path, self.settings, directory_path)
+                to_process.full_analysis_ROI(mode = mode)
+        print('########Finished########')
+        self.output_folder = os.path.join(folder, 'output')
