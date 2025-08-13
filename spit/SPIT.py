@@ -12,8 +12,9 @@ import json
 import traceback
 from glob import glob
 from multiprocessing import freeze_support
-
+from natsort import natsorted
 import yaml as _yaml
+import re
 # import pickle
 import numpy as np
 import pandas as pd
@@ -161,7 +162,7 @@ class SPIT_Run:
              filelist = []
              self.locs = {}
              for i, path in enumerate(paths):
-                 print(path)
+                 # print(path)
                  if self.settings.localization_settings.skip in path or 'cluster_analysis' in path:
                      skippedPaths.append(path)
                      break
@@ -263,7 +264,7 @@ class SPIT_Run:
             print('--------------------------------------------------------')
     def roi(self):
         '''Restrict localizations to ROIs'''
-
+        # print(self.image_folder)
         # format filepaths
         if os.path.isdir(self.image_folder):
             print('Analyzing directory...')
@@ -285,7 +286,7 @@ class SPIT_Run:
             try:
                 (df_locs, info) = tools.load_locs(path)
                 # Look for ROI paths
-                pathsROI = glob(os.path.dirname(path) + '/*.roi', recursive=False)
+                pathsROI = natsorted(glob(os.path.dirname(path) + '/*.roi', recursive=False))
                 print(f'Found {len(pathsROI)} ROI.')
 
                 dict_roi = {'cell_id': [], 'path': [], 'contour': [],
@@ -416,7 +417,7 @@ class SPIT_Run:
                         # this stuff needs to go into tools
                         for idx, roi_path in enumerate(pathsROI):
                             roi_contour = tools.get_roi_contour(roi_path)
-                            dict_roi['cell_id'].append(idx)
+                            dict_roi['cell_id'].append(re.search(r'roi(\d+)\.roi$', roi_path))
                             dict_roi['path'].append(roi_path)
                             dict_roi['contour'].append(roi_contour)
                             dict_roi['area'].append(tools.get_roi_area(roi_contour))
@@ -757,8 +758,9 @@ class SPIT_Dataset:
         directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
         for path in directory_names:
             if os.path.isdir(path):
-                to_process = SPIT_Run(path, self.settings, directory_path)
-                to_process.affine_transform()
+                # if "cont" in path:
+                    to_process = SPIT_Run(path, self.settings, directory_path)
+                    to_process.affine_transform()
         print('########Finished########')
     def localize(self):
         directory_path = self.folder
@@ -766,8 +768,9 @@ class SPIT_Dataset:
         directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
         for path in directory_names:
             if os.path.isdir(path):
-                to_process = SPIT_Run(path, self.settings, directory_path)
-                to_process.localize()
+                # if "cont" in path:
+                    to_process = SPIT_Run(path, self.settings, directory_path)
+                    to_process.localize()
         print('########Finished########')
     def roi(self):
         directory_path = self.folder
@@ -775,9 +778,13 @@ class SPIT_Dataset:
         directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
         for path in directory_names:
             if os.path.isdir(path):
-                print(path)
                 to_process = SPIT_Run(path, self.settings, directory_path)
+                # if "cont" in path:
+                # if any('roi_locs.csv' in fname for fname in os.listdir(to_process.image_folder)):
+                #     print(f'skipped {path}')
+                #     continue  # Skip roi() if such a file exists
                 to_process.roi()
+
         print('########Finished########')
     def link(self):
         directory_path = self.folder
@@ -785,7 +792,6 @@ class SPIT_Dataset:
         directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
         for path in directory_names:
             if os.path.isdir(path):
-                print(path)
                 to_process = SPIT_Run(path, self.settings, directory_path)
                 to_process.link()
         print('########Finished########')
@@ -795,7 +801,6 @@ class SPIT_Dataset:
         directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
         for path in directory_names:
             if os.path.isdir(path):
-                print(path)
                 to_process = SPIT_Run(path, self.settings, directory_path)
                 to_process.coloc_tracks()
         print('########Finished########')
@@ -1000,7 +1005,7 @@ class localize_tiff_run:
             try:
                 (df_locs, info) = tools.load_locs(path)
                 # Look for ROI paths
-                pathsROI = glob(os.path.dirname(path) + '/*.roi', recursive=False)
+                pathsROI = natsorted(glob(os.path.dirname(path) + '/*.roi', recursive=False))
                 print(f'Found {len(pathsROI)} ROI.')
 
                 dict_roi = {'cell_id': [], 'path': [], 'contour': [],
@@ -1220,4 +1225,4 @@ class localize_tiff_dataset:
                 to_process = localize_tiff_run(path, self.settings, directory_path)
                 to_process.full_analysis_ROI(mode = mode)
         print('########Finished########')
-        self.output_folder = os.path.join(folder, 'output')
+        self.output_folder = os.path.join(self.folder, 'output')
