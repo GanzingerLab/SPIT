@@ -296,7 +296,7 @@ class SPIT_Run:
                 df_locs = df_locs.drop('cell_id', axis=1)
                 for idx, roi_path in enumerate(pathsROI):
                     roi_contour = tools.get_roi_contour(roi_path)
-                    dict_roi['cell_id'].append(idx)
+                    dict_roi['cell_id'].append(re.search(r'roi(\d+)\.roi$', roi_path))
                     dict_roi['path'].append(roi_path)
                     dict_roi['contour'].append(roi_contour)
                     dict_roi['area'].append(tools.get_roi_area(roi_contour))
@@ -1015,7 +1015,7 @@ class localize_tiff_run:
                 df_locs = df_locs.drop('cell_id', axis=1)
                 for idx, roi_path in enumerate(pathsROI):
                     roi_contour = tools.get_roi_contour(roi_path)
-                    dict_roi['cell_id'].append(idx)
+                    dict_roi['cell_id'].append(re.search(r'roi(\d+)\.roi$', roi_path))
                     dict_roi['path'].append(roi_path)
                     dict_roi['contour'].append(roi_contour)
                     dict_roi['area'].append(tools.get_roi_area(roi_contour))
