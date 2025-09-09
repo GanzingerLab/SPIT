@@ -13,7 +13,7 @@ def createTable(path):
             !Run Number!!Sample!!Mode!!Exposure!!Bitdepth!!Frames!!Lasers!!Frap!!FRAP Laser!!FRAP Power!!FRAP Duration !!Analysis \n |- \n'
 
     # create text file to store output in
-    text_file = open(os.path.join(path, 'output.txt'), 'w')
+    text_file = open(os.path.join(path, 'wiki_table.txt'), 'w')
     text_file.write(table_header)
 
     for i in range(0, len(filelist)):  # loop through all result.txt files

@@ -35,7 +35,7 @@ import picasso.avgroi as avgroi
 from spit import tools
 from spit import localize
 from spit import linking as link
-from spit import table
+from spit import table as table
 from spit import plot_diffusion
 from spit import colocalize as coloc
 from spit import plot_coloc
@@ -266,6 +266,7 @@ class SPIT_Run:
         '''Restrict localizations to ROIs'''
         # print(self.image_folder)
         # format filepaths
+        print(self.image_folder)
         if os.path.isdir(self.image_folder):
             print('Analyzing directory...')
             paths = glob(self.image_folder + '/*nm_locs.csv')
@@ -412,8 +413,7 @@ class SPIT_Run:
             
                     if roi_boolean:
                         # Look for ROI paths
-                        pathsROI = glob(os.path.dirname(path) +
-                                        '/*.roi', recursive=False)
+                        pathsROI = natsorted(glob(os.path.dirname(path) + '/*.roi', recursive=False))
                         print(f'Adding {len(pathsROI)} ROI infos.')
             
                         dict_roi = {'cell_id': [], 'path': [], 'contour': [],
@@ -451,8 +451,30 @@ class SPIT_Run:
                         # export parameters to yaml
                         with open(os.path.splitext(path_nm)[0] +'_'+ self.settings.link_settings.tracker+ '.yaml', 'w') as f:
                             yaml.dump(vars(self.settings.link_settings), f)
-            
-                        df_tracksTP = link.link_locs_trackpy(df_locs, search=self.settings.link_settings.search, memory=self.settings.link_settings.memory)
+                        
+                        tracks_list = []
+                        next_track_id = 0  # global track counter
+                        
+                        for cid, group in df_locs.groupby("cell_id"):
+                            group_sorted = group.sort_values("t")  # ensure t is increasing
+                            linked = link.link_locs_trackpy(
+                                group_sorted,
+                                search=self.settings.link_settings.search, 
+                                memory=self.settings.link_settings.memory
+                            )
+                        
+                            # offset track IDs to make them globally unique
+                            if not linked.empty:
+                                linked["track.id"] += next_track_id
+                                next_track_id = linked["track.id"].max() + 1
+                        
+                            linked["cell_id"] = cid
+                            tracks_list.append(linked)
+                        
+                        df_tracksTP = pd.concat(tracks_list, ignore_index=True)
+                        
+                        
+                        # df_tracksTP = link.link_locs_trackpy(df_locs, search=self.settings.link_settings.search, memory=self.settings.link_settings.memory)
             
                         # # linked file is saved with pixel-corrected coordinates and
                         # # swiftGUI compatible columns, and unique track.ids
@@ -550,8 +572,8 @@ class SPIT_Run:
                     df_colocs.to_csv(pathOutput + '_colocsTracks.csv', index=False)
                     if 'roi' in pathCh0:
                         # Look for ROI paths
-                        pathsROI = glob(os.path.dirname(pathCh0) +
-                                        '/*.roi', recursive=False)
+                        pathsROI = natsorted(glob(os.path.dirname(pathCh0) +
+                                        '/*.roi', recursive=False))
                         print(f'Adding {len(pathsROI)} ROI infos.')
             
                         dict_roi = {'cell_id': [], 'path': [], 'contour': [],
@@ -695,6 +717,7 @@ class SPIT_Run:
     def full_analysis_noROI(self, mode = 'tracks'):
         original_roi = self.settings.link_settings.roi
         self.settings.link_settings.roi = False
+        self.table()
         self.affine_transform()
         self.localize()
         if mode == 'tracks':
@@ -714,12 +737,13 @@ class SPIT_Run:
             self.localize
         self.settings.link_settings.roi = original_roi
     def full_analysis_ROI(self, mode = 'tracks'):
-        pathsROI = glob(self.image_folder + '/*.roi', recursive=False)
+        pathsROI = natsorted(glob(self.image_folder + '/*.roi', recursive=False))
         if not pathsROI:
             print('Be aware that for this mode you first need to do the .affine_transform and then manually draw ROIs with imageJ freehand tool, and save them as roiX.roi where X is a number starting by 0 and going up to as many ROIs there are')
         else:
             original_roi = self.settings.link_settings.roi
             self.settings.link_settings.roi = True
+            self.table()
             self.localize()
             self.roi()
             if mode == 'tracks':
@@ -751,6 +775,8 @@ class SPIT_Run:
                 return result_file, datalog_file
 
         raise FileNotFoundError("No valid *_result.txt found within the same parent folder. Copy one yourself.")
+    def table(self):
+        table.createTable(self.folder)
 class SPIT_Dataset:
     def __init__(self, folder, settings):
         self.folder = folder
@@ -837,6 +863,17 @@ class SPIT_Dataset:
                 to_process = SPIT_Run(path, self.settings, directory_path)
                 to_process.full_analysis_ROI(mode = mode)
         print('########Finished########')
+    def table(self):
+        directory_path = self.folder
+        pathsRaw = glob(directory_path + '/**/**.raw', recursive=True) #Check for each .row file in the folder and subfolders. 
+        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
+        for path in directory_names:
+            if os.path.isdir(path):
+                # if "cont" in path:
+                    to_process = SPIT_Run(path, self.settings, directory_path)
+                    to_process.table()
+        print('########Finished########')
+
 class localize_tiff_run:
     def __init__(self, folder, settings, output_folder = None):
         self.folder = folder
@@ -1143,7 +1180,7 @@ class localize_tiff_run:
         self.colocalize()
         self.settings.link_settings.roi = original_roi
     def full_analysis_ROI(self, mode = 'tracks'):
-        pathsROI = glob(self.image_folder + '/*.roi', recursive=False)
+        pathsROI = natsorted(glob(self.image_folder + '/*.roi', recursive=False))
         if not pathsROI:
             print('Be aware that for this mode you first need to do the .affine_transform and then manually draw ROIs with imageJ freehand tool, and save them as roiX.roi where X is a number starting by 0 and going up to as many ROIs there are')
         else:
