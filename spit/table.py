@@ -1,11 +1,12 @@
 import glob
 import os
 from spit import tools
+from natsort import natsorted
 
 
 def createTable(path):
     print('Creating Table for Wiki')
-    filelist_or = glob.glob(path + '/**/*result.txt', recursive=True)
+    filelist_or = natsorted(glob.glob(path + '/**/*result.txt', recursive=True))
     filelist  = []
     for i in filelist_or:
         if 'output' not in i:
