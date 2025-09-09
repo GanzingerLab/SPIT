@@ -864,14 +864,7 @@ class SPIT_Dataset:
                 to_process.full_analysis_ROI(mode = mode)
         print('########Finished########')
     def table(self):
-        directory_path = self.folder
-        pathsRaw = glob(directory_path + '/**/**.raw', recursive=True) #Check for each .row file in the folder and subfolders. 
-        directory_names = list(set(os.path.dirname(file) for file in pathsRaw)) #makes a lost with the direction to each folder containing .raw files. 
-        for path in directory_names:
-            if os.path.isdir(path):
-                # if "cont" in path:
-                    to_process = SPIT_Run(path, self.settings, directory_path)
-                    to_process.table()
+        table.createTable(self.folder)
         print('########Finished########')
 
 class localize_tiff_run:

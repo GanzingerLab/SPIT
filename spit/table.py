@@ -5,21 +5,28 @@ from spit import tools
 
 def createTable(path):
     print('Creating Table for Wiki')
-    filelist = glob.glob(path + '/**/*result.txt', recursive=True)
+    filelist_or = glob.glob(path + '/**/*result.txt', recursive=True)
+    filelist  = []
+    for i in filelist_or:
+        if 'output' not in i:
+            filelist.append(i)
     print('There are '+str(len(filelist))+' Run folders with a result.txt file.')
 
     table_header = '{| class="wikitable sortable mw-collapsible mw-collapsed"  \n |- \n \
-        | bgcolor="#9fddf4" | Filepath || bgcolor="#9fddf4" colspan="12" | '+filelist[0][:-10]+'</span>  \n |- \n \
-            !Run Number!!Sample!!Mode!!Exposure!!Bitdepth!!Frames!!Lasers!!Frap!!FRAP Laser!!FRAP Power!!FRAP Duration !!Analysis \n |- \n'
+        | bgcolor="#9fddf4" | Filepath || bgcolor="#9fddf4" colspan="10" | '+path+'</span>  \n |- \n \
+            !Run Number!!Sample!!Mode!!Exposure!!Bitdepth!!Frames!!Lasers!!Frap!!FRAP Laser!!FRAP Power!!FRAP Duration\n |- \n'
 
     # create text file to store output in
-    text_file = open(os.path.join(path, 'wiki_table.txt'), 'w')
+    text_file = open(os.path.join(path, 'wiki_table.txt'), 'w', encoding='utf-8')
     text_file.write(table_header)
 
     for i in range(0, len(filelist)):  # loop through all result.txt files
         mode = '-'
         frap = '-'
         comment = '-'
+        int_path = filelist[i].replace(path, '')[:-29]#r'\\'.join(.split(r'\\')[:-2])
+        if 'output' in filelist[i]:
+            continue
         with open(filelist[i]) as file:  # read in result.txt file and store in list
             analysisplot0 = '-'
             analysisplot1 = '-'
@@ -113,13 +120,17 @@ def createTable(path):
             mod = i % 2
             background_color = ['#d8d8b2', '#d8c5b2']
 
-        text_file.write('| bgcolor="'+background_color[mod]+'" rowspan="3" | '+run_number+' <br> {{small|' + time + '}} || bgcolor="'+background_color[mod]+'" |'+sample+'|| bgcolor="'+background_color[mod]+'" |'+mode+'||bgcolor="'+background_color[mod]+'" |'+exposure+'||bgcolor="'+background_color[mod]+'" |'+bitdepth+'||bgcolor="'+background_color[mod]+'" |'+frames+'|| bgcolor="'+background_color[mod]+'" |'
-                        + lasers+'|| bgcolor="'+background_color[mod]+'" |' + frap_bold+' ||bgcolor="'+background_color[mod]+'" |'+frap_laser+'||bgcolor="'+background_color[mod]+'" |'+frap_power+'||bgcolor="'+background_color[mod]+'" |'+frap_duration+' ||bgcolor="'+background_color[mod]+'" rowspan="3" | ' + analysisplot0 + analysisplot1 + analysisplot2 + ' \n |- \n')
+        text_file.write('| bgcolor="'+background_color[mod]+'" rowspan="5" | '+run_number+' <br> {{small|' + time + '}} || bgcolor="'+background_color[mod]+'" |'+sample+'|| bgcolor="'+background_color[mod]+'" |'+mode+'||bgcolor="'+background_color[mod]+'" |'+exposure+'||bgcolor="'+background_color[mod]+'" |'+bitdepth+'||bgcolor="'+background_color[mod]+'" |'+frames+'|| bgcolor="'+background_color[mod]+'" |'
+                        + lasers+'|| bgcolor="'+background_color[mod]+'" |' + frap_bold+' ||bgcolor="'+background_color[mod]+'" |'+frap_laser+'||bgcolor="'+background_color[mod]+'" |'+frap_power+'||bgcolor="'+background_color[mod]+'" |'+frap_duration+ ' \n |- \n')
         text_file.write(
-            '| bgcolor="'+background_color[mod]+'" colspan="11" | Comment:  <span style="color:#0a78a0">'+comment+'. '+abortion+'</span> \n |-\n')
+            '| bgcolor="'+background_color[mod]+'" colspan="10" | Comment:  <span style="color:#0a78a0">'+comment+'. '+abortion+'</span> \n |-\n')
         text_file.write(
-            '| bgcolor="'+background_color[mod]+'" colspan="11" | Conclusion:  <span style="color:#0a78a0">'+conclusion+'.</span> \n |-\n')
+            '| bgcolor="'+background_color[mod]+'" colspan="10" | Conclusion:  <span style="color:#0a78a0">'+conclusion+'.</span> \n |-\n')
+        text_file.write(
+            '| bgcolor="'+background_color[mod]+'" colspan="10" | path:  <span style="color:#0a78a0">'+int_path+'</span> \n |-\n')
+        text_file.write(
+            '| bgcolor="'+background_color[mod]+'" colspan="10" | Manual_comment:  <span style="color:#0a78a0">'+''+'</span> \n |-\n')
     text_file.write('|}')
 
     text_file.close()
-    print('Created output.txt file')
+    print('Created wiki_table.txt file')
