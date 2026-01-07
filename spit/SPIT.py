@@ -922,9 +922,9 @@ class SPIT_Run:
         elif mode == 'spots':
             self.coloc_spots()
             self.settings.link_settings.coloc = False
-            self.localize()
+            self.link()
             self.settings.link_settings.coloc = True
-            self.localize
+            self.link()
         self.settings.link_settings.roi = original_roi
     def full_analysis_ROI(self, mode = 'tracks'):
         """
