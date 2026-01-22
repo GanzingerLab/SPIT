@@ -269,7 +269,7 @@ class SPIT_Run:
                 filelist = []
                 self.locs = {}
                 for i, path in enumerate(paths):
-                    print(path)
+                    # print(path)
                     if self.settings.localization_settings.skip in path or 'cluster_analysis' in path:
                         skippedPaths.append(path)
                         continue
