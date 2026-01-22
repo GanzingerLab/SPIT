@@ -235,7 +235,6 @@ def coloc_tracks(df_488, df_638, leng = 10, max_distance = 250, n = 3):
         # Concatenate all the data into a single DataFrame
         final_df = pd.concat(concatenated_data, ignore_index=True)
         new_order = ['colocID', 'track.id_0','track.id_1', 't', 'locID_0','locID_1','x', 'y','distance', 'x_0', 'y_0', 'x_1', 'y_1', 'intensity_0', 'intensity_1', 'cell_id', 'loc_count_0', 'loc_count_1']
-        
         # Reorder the columns
         final_df = final_df[new_order]
         return final_df, matched_df

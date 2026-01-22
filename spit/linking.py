@@ -378,9 +378,8 @@ def get_props(df_tracks):
     """
 
     # Call individual functions
-
     s_var = get_var(df_tracks)
-
+    
     s_msd = getfit_moments(df_tracks)
 
     # Combine output
@@ -449,9 +448,8 @@ def get_particle_stats(df_tracks, dt, particle='track.id', t='t'):
         pandas.DataFrame:     Output of get_props() for each track in ``df`` (groupby-apply approach).     
     """
     nm2um = 0.001
-
     tqdm.pandas()  # For progressbar under apply
-
+    
     df_stats = df_tracks.groupby('track.id').progress_apply(get_props)
     df_stats = apply_jd_analysis(df_stats, dt)
 
@@ -460,13 +458,12 @@ def get_particle_stats(df_tracks, dt, particle='track.id', t='t'):
 
     # track.id as integers
     df_stats['track.id'] = df_stats['track.id'].astype(dtype='int64')
-
+    
     # drop unused columns/indices
     df_stats.drop('p_iter', inplace=True, axis=1)
     df_stats.drop('max_iter', inplace=True, axis=1)
     df_stats = df_stats.reset_index(drop=True)
     return df_stats
-
 
 def tracks_greaterT(df_tracks, dt):
     """
