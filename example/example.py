@@ -1,3 +1,4 @@
+#%%
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jul 28 13:40:42 2025
@@ -53,11 +54,11 @@ class RegistrationSettings:
     
 class LocalizationSettings:
     def __init__(self):
-        self.box = 7 #same as in picasso localize
+        self.box = 11 #same as in picasso localize
         self.gradient405 = 300 #same as in picasso localize
-        self.gradient488 = 1000 #same as in picasso localize
-        self.gradient561 = 330 #same as in picasso localize
-        self.gradient638 = 1000 #same as in picasso localize
+        self.gradient488 = 1053 #same as in picasso localize
+        self.gradient561 = 500 #same as in picasso localize
+        self.gradient638 = 4534 #same as in picasso localize
         
         #####USED ONLY FOR AFFINE TRANSFORM OF TIFF FILES#####
         self.gradient_l = 500    #same as in picasso localize
@@ -73,8 +74,8 @@ class LocalizationSettings:
             'Sensitivity': 0.6,  #Sensitivity is the conversion factor (electrons per analog-to-digital (A/D) count)
             'qe': 0.9  #In Picasso qe (quantum efficiency) is not used anymore. It is left for bacward compatibility. 
         }
-        self.fit_method = 'lq' #'com' for stuff that moves too fast and does not look like a gaussian spot, 'lq' for gaussian spots. 
-        self.skip = 'not_track'
+        
+        self.skip = '561'
         self.suffix = '' #sufix for the name of the file, if necessary.
         self.transform = False #Do non-affine corrections of the localized spots if you have multiple channels.
         self.plot = True 
@@ -132,7 +133,7 @@ settings = settings.Settings(RegistrationSettings, LocalizationSettings, LinkSet
 if __name__ == "__main__":
     #spit_run = SPIT_Run(folder to analyze, settings, folder to save the output)
     #it is the same for localize_tiff_run. Example:
-    spit_run = (r'D:\Data\test_error_result_files\chi\Run00002', settings, r'D:\Data\test_error_result_files')
+    spit_run = SPIT_Run(r'D:\Data\test_error_result_files\chi\Run00002', settings, r'D:\Data\test_error_result_files')
     #spit_dataset = (folder to analyze, settings)
     #it is the same for localize_tiff_dataset. Example:
     spit_datset = SPIT_Dataset(r'D:\Data\test_error_result_files', settings)
@@ -214,6 +215,14 @@ if __name__ == "__main__":
         #reorder or check which one you prefer from these files. 
 #%%
 if __name__ == "__main__":
-    test4 = SPIT_Run(r'D:\Data\test_error_result_files\Run00007', settings, r'D:\Data\test_error_result_files')
-    test4.coloc_spots()
-    
+    test4 = SPIT_Dataset(r'P:\18 REPRESSIT\CELL_experiments\Anna\20260113_AB001_training', settings)
+    test4.localize()
+    # test4.roi()
+
+
+#%%
+if __name__ == "__main__":
+    test4 = SPIT_Run(r'P:\18 REPRESSIT\CELL_experiments\Anna\20260113_AB001_training\pMHC_well1\Run00005', settings)
+    # test4.affine_transform()
+    test4.localize()
+    # test4.roi()

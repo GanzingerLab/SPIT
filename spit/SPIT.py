@@ -1669,9 +1669,7 @@ class localize_tiff_run:
         """
         Apply an affine transformation.
         """
-        return affine_transform(image, H[:2, :2], (H[0, 2], H[1, 2]))  
-        
-        
+        return affine_transform(image, H[:2, :2], (H[0, 2], H[1, 2]))               
 class localize_tiff_dataset:
     """
     Manages batch processing of multiple TIFF microscopy datasets within a folder.
