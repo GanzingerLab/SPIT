@@ -51,9 +51,9 @@ class SPIT_Run:
     Controller class for performing the full SPIT analysis workflow: affine image correction, 
     localization, ROI restriction, linking, and colocalization of fluorescence microscopy data.
 
-    The class operates on an experiment folder containing raw `.raw` image files and corresponding
-    metadata files (`*_result.txt`, `*_datalog.txt`). It uses user-defined `settings` defined in the running script
-    to control each analysis step.
+    The class operates on an experiment folder containing `.raw` image files and corresponding
+    metadata files (`*_result.txt`, `*_datalog.txt`). It uses user-defined `settings` defined in the running 
+    script to control each analysis step.
 
     Attributes
     ----------
@@ -135,13 +135,15 @@ class SPIT_Run:
         FileNotFoundError
             If the required `*_result.txt` or `*_datalog.txt` files are missing.
         """
+        #Get necessary settings
         verticalROI = self.settings.registration_settings.verticalROI
         to_keep = self.settings.registration_settings.to_keep
-        
+        # get results.txt and datalog.txt file paths
         base_name = os.path.basename(self.folder)
-        result_file = self.folder+'\\' +self.folder.split("\\")[-1]+'_result.txt'  #get direction result.txt file
-        datalog_file = self.folder+'\\' +self.folder.split("\\")[-1]+'_datalog.txt' #get direction of datalog.txt file. 
+        result_file = self.folder+'\\' +self.folder.split("\\")[-1]+'_result.txt'  
+        datalog_file = self.folder+'\\' +self.folder.split("\\")[-1]+'_datalog.txt' 
         used_fallback = False
+        #if those do not exist look for an alternative file.
         if not (os.path.exists(result_file) and os.path.exists(datalog_file)):
             try:
                 result_file, datalog_file = self._find_alternative_result_file(self.folder)
@@ -149,9 +151,10 @@ class SPIT_Run:
             except FileNotFoundError as e:
                 print(f"[Skip] {self.folder} — {e}")
                 return
-        result_txt=tools.read_result_file(result_file) #get a dictionary with the information in the result.txt file. 
-         #define save folder. 
-        if not os.path.exists(self.image_folder): #create the save folder if it does not exist. 
+        #get a dictionary with the information in the result.txt file.
+        result_txt=tools.read_result_file(result_file)  
+        #create output folder if it does not exist
+        if not os.path.exists(self.image_folder):
             os.makedirs(self.image_folder)
         if used_fallback:
             # Rename fallback files to match current folder name
@@ -168,7 +171,7 @@ class SPIT_Run:
             # Keep original file names
             shutil.copy(result_file, self.image_folder)
             shutil.copy(datalog_file, self.image_folder)
-        #check whether Annapurna or K2 was used and initialize the neceesary variables depening on that
+        #check whether Annapurna or K2 TIRF microscope were used and initialize the neceesary variables depening on that
         if result_txt['Computer'] == 'ANNAPURNA': 
             x_coords = self.settings.registration_settings.x_coords_annapurna
             Hl  = self.settings.load_H_left_annapurna()
@@ -186,7 +189,7 @@ class SPIT_Run:
             for pat, ch in pattern.items():  #and for each pattern
                 file_name = os.path.join(self.folder, f"{os.path.basename(self.folder)}_{pat}.raw") #open the raw file
                 d, inf = tools.load_raw(file_name)
-                for i in ch: #for each channel that ahs been used in that specific pattern
+                for i in ch: #for each channel that has been used in that specific pattern
                     ch = i.strip()
                     image = d[to_keep[0]:to_keep[1], verticalROI[0]:verticalROI[1], x_coords[ch][0]:x_coords[ch][1]] #Crop the image in the specific x_coordinates to use
                     if ch in ['405nm', '488nm']: #if the laser used is 405 or 488, use the right H matrix to correct. 
@@ -250,7 +253,7 @@ class SPIT_Run:
         """
         try:
             transformInfo = 'False' 
-            #Actually not needed, because you can only add folders, based on a function in def main: 
+            #Actually not needed, because you can only add folders, based on a function in def main, left in case it needs to be compared with older versions: 
             if os.path.isdir(self.image_folder): 
                print('Analyzing directory', self.image_folder)
                pathsTif = glob(self.image_folder + '/*.tif', recursive=True)
@@ -283,7 +286,7 @@ class SPIT_Run:
                     print('--------------------------------------------------------')
                     print('gradient:', self.settings.gradient(path))
                     
-                    #Localize spots in the images based on the chosen fit-method
+                    #Localize spots in the images based on the chosen fit-method and settings
                     current, futures = identify_async(movie, gradient, self.settings.localization_settings.box)
                     ids = identifications_from_futures(futures)     
                     box = self.settings.localization_settings.box
@@ -417,7 +420,6 @@ class SPIT_Run:
                             'area': [], 'roi_mask': [], 'centroid': []}
                 
                 # this stuff needs to go into tools
-                
                 df_locs = df_locs.drop('cell_id', axis=1)
                 for idx, roi_path in enumerate(pathsROI):
                     roi_contour = tools.get_roi_contour(roi_path)
