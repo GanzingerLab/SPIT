@@ -58,18 +58,20 @@ class Settings:
         }  
         
         #K2
-        self.ch_width_K2 = 682    #560   #The width of the channels in pixels. 
-        self.x_coords_K2 = { #K2
-            '638nm': (0, 0 + self.ch_width_K2),  
-            '561nm': (0 + self.ch_width_K2, 0 + self.ch_width_K2 + self.ch_width_K2),  
-            '488nm': (0 + self.ch_width_K2 + self.ch_width_K2, 0 + self.ch_width_K2 + self.ch_width_K2 + self.ch_width_K2), 
-            '405nm': (0 + self.ch_width_K2 + self.ch_width_K2, 0 + self.ch_width_K2 + self.ch_width_K2 + self.ch_width_K2)  
-        }
-        #Or, if using 560 x_coords = { #K2
-        #     'ch1': (60, 60 + self.ch_width_K2),  
-        #     'ch2': (740, 740 + self.ch_width_K2),  
-        #     'ch3': (1415, 1415 + self.ch_width_K2)  
+        # self.ch_width_K2 = 682    #560   #The width of the channels in pixels. 
+        # self.x_coords_K2 = { #K2
+        #     '638nm': (0, 0 + self.ch_width_K2),  
+        #     '561nm': (0 + self.ch_width_K2, 0 + self.ch_width_K2 + self.ch_width_K2),  
+        #     '488nm': (0 + self.ch_width_K2 + self.ch_width_K2, 0 + self.ch_width_K2 + self.ch_width_K2 + self.ch_width_K2), 
+        #     '405nm': (0 + self.ch_width_K2 + self.ch_width_K2, 0 + self.ch_width_K2 + self.ch_width_K2 + self.ch_width_K2)  
         # }
+        #Or, if using 560 x_coords 
+        self.ch_width_K2 = 682
+        self.x_coords_K2 = { #K2
+            'ch1': (60, 60 + self.ch_width_K2),  
+            'ch2': (740, 740 + self.ch_width_K2),  
+            'ch3': (1415, 1415 + self.ch_width_K2)  
+        }
         
     
         

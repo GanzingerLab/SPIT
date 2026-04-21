@@ -39,7 +39,7 @@ from spit import table as table
 from spit import plot_diffusion
 from spit import colocalize as coloc
 from spit import plot_coloc
-
+from pathlib import Path
 import os
 import numpy as np
 
@@ -491,7 +491,7 @@ class SPIT_Run:
             If linking fails or if no valid trajectories are found.
         """
         try:
-            if os.path.isdir(self.image_folder):
+            if os.path.isdir(Path(self.image_folder)):
                 if self.settings.link_settings.coloc:
                     paths = glob(self.image_folder + '/*colocs.csv', recursive=True)
                 else:
@@ -549,9 +549,9 @@ class SPIT_Run:
                         roi_width = 100
                         if not roi_boolean:  # avoiding clash with ROIs-only limit frames
                             df_locs = df_locs[(df_locs.x > (img_size/2-roi_width))
-                                              & (df_locs.x < (img_size/2+roi_width))]
+                                                & (df_locs.x < (img_size/2+roi_width))]
                             df_locs = df_locs[(df_locs.y > (img_size/2-roi_width))
-                                              & (df_locs.y < (img_size/2+roi_width))]
+                                                & (df_locs.y < (img_size/2+roi_width))]
                         df_locs = df_locs[df_locs.t <= 500]
                         quick = '_quick'
                     else:
@@ -637,9 +637,9 @@ class SPIT_Run:
             
                     print('Calculating and plotting particle-wise diffusion analysis...\n')
                     df_stats = link.get_particle_stats(df_tracks,
-                                                       dt=dt,
-                                                       particle='track.id',
-                                                       t='t')
+                                                        dt=dt,
+                                                        particle='track.id',
+                                                        t='t')
             
             #         # adding ROI stats to track stat file
                     if roi_boolean:
@@ -668,7 +668,7 @@ class SPIT_Run:
                     skippedPaths.append(path)
                     continue
         except Exception as e:
-            print('Error')
+            print('Error', e)
         print('--------------------------------------------------------')
         print('/////////////////////FINISHED//////////////////////////')
         print('--------------------------------------------------------')
