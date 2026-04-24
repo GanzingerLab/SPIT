@@ -172,16 +172,21 @@ class SPIT_Run:
             shutil.copy(result_file, self.image_folder)
             shutil.copy(datalog_file, self.image_folder)
         #check whether Annapurna or K2 TIRF microscope were used and initialize the neceesary variables depening on that
+
         if result_txt['Computer'] == 'ANNAPURNA': 
             x_coords = self.settings.registration_settings.x_coords_annapurna
             Hl  = self.settings.load_H_left_annapurna()
             Hr = self.settings.load_H_right_annapurna()
             xlim, ylim = self.settings.load_crop_annapurna()
+            width_crop  = self.settings.registration_settings.width_crop
+            original_crop = self.settings.registration_settings.original_crop_annapurna
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             x_coords = self.settings.registration_settings.x_coords_K2
             Hl  = self.settings.load_H_left_K2()
             Hr = self.settings.load_H_right_K2()
             xlim, ylim = self.settings.load_crop_K2()
+            width_crop  = self.settings.registration_settings.width_crop
+            original_crop = self.settings.registration_settings.original_crop_K2
         #check the imaging mode used: sequence or record (a.k.a VCR). 
         if result_txt['Mode'] == 'Sequence': #if you used sequence for that run
             pattern = tools.get_pattern(result_txt) #get the specific patterns that you used.
@@ -205,11 +210,49 @@ class SPIT_Run:
                         _yaml.dump_all(inf, file, default_flow_style=False)
                     save = os.path.join(self.image_folder, f"{pat}_{ch}.tif") #save the image as .tif
                     imageio.mimwrite(save, cropped_im)    
+
         elif result_txt['Mode'] == 'VCR': #if you used record for that run
             pattern = tools.get_VCR_pattern(result_txt) #get the lasers that you used. 
             file_name = self.folder+'\\' +self.folder.split("\\")[-1]+'_'+'record'+'.raw'#open the raw file
-            d, inf = tools.load_raw(file_name)
+            image, inf = tools.load_raw(file_name)
             self.split_ch = {}
+            d = np.zeros([len(image), image.shape[1], 2048 ], dtype=np.uint16)
+            camera_channels = [ch.strip() for ch in result_txt['Camera Channels'].split(',')] if 'Camera Channels' in result_txt else []
+            
+            if not camera_channels: # extract camera channels from the readout - only for old data where 
+                                    #we know the crop coordinates were 0, 682 and 1365 (now we have changed them, as specified in
+                                    #the settings in the example script. This is only a fallback to be able to use older data
+                readout = result_txt['Readout'].split(':')[1].split('@')
+                size = readout[0].strip()
+                start = readout[1].strip()
+                size = int(size.split('x')[0])
+                start = int(start.split(',')[0])
+                if size == 2048: 
+                    camera_channels = ['ch1', 'ch2', 'ch3']
+                else:
+                    if start == 0: 
+                        camera_channels = ['ch1']
+                        if size == 1344: 
+                            camera_channels.append('ch2')
+                    elif start == 682:
+                        camera_channels = ['ch2']
+                        if size == 1344: 
+                            camera_channels.append('ch3')
+                    elif start == 1365: 
+                        camera_channels = ['ch3']
+                    camera_channels = sorted(camera_channels, key=lambda x: int(x.strip('ch'))) # sort the camera channels based on the number after 'ch'
+
+            w = width_crop[len(camera_channels)]
+            loc = original_crop[camera_channels[0].strip()] if len(camera_channels) < 3 else 0
+            d[:, :, loc:loc+w] = image
+            if 'ch1' not in camera_channels:
+                pattern['638nm']  = False
+            if 'ch2' not in camera_channels:
+                pattern['561nm']  = False
+            if 'ch3' not in camera_channels: 
+                pattern['488nm']  = False
+                pattern['405nm']  = False
+
             for ch, presence in pattern.items(): #for each laser used
                 if presence: 
                     image = d[to_keep[0]:to_keep[1], verticalROI[0]:verticalROI[1], x_coords[ch][0]:x_coords[ch][1]] #crop the specific channel
