@@ -222,14 +222,14 @@ class SPIT_Run:
             if not camera_channels: # extract camera channels from the readout - only for old data where 
                                     #we know the crop coordinates were 0, 682 and 1365 (now we have changed them, as specified in
                                     #the settings in the example script. This is only a fallback to be able to use older data
-                readout = result_txt['Readout'].split(':')[1].split('@')
-                size = readout[0].strip()
-                start = readout[1].strip()
-                size = int(size.split('x')[0])
-                start = int(start.split(',')[0])
-                if size == 2048: 
+                if image.shape[2] == 2048: 
                     camera_channels = ['ch1', 'ch2', 'ch3']
                 else:
+                    readout = result_txt['Readout'].split(':')[1].split('@')
+                    size = readout[0].strip()
+                    start = readout[1].strip()
+                    size = int(size.split('x')[0])
+                    start = int(start.split(',')[0])
                     if start == 0: 
                         camera_channels = ['ch1']
                         if size == 1344: 
