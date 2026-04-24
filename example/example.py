@@ -10,7 +10,7 @@ from spit.SPIT import SPIT_Run, SPIT_Dataset, localize_tiff_run, localize_tiff_d
 
 class RegistrationSettings:
     def __init__(self):
-        self.registration_folder = r'D:\Data\Tom\260423_beads_for_Gerard\260423_K2\regis' # r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\regis' #Folder containing the H-matrices and crop coordinates needed for the alignment of the channels
+        self.registration_folder = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\regis' #Folder containing the H-matrices and crop coordinates needed for the alignment of the channels
         self.verticalROI = [0, 1100] #Specify the heigth of the channels that you want to use. I am pretty sure that if we set it larger, it still does it correctly. 
         self.to_keep = [0, None] #number of frames to procees. 
         #[0, None] means all frames, if you want to change it, set the specific number ([0:200] would be the first 200 frames 
@@ -20,6 +20,13 @@ class RegistrationSettings:
             2: 1344, 
             3: 2048
         } 
+
+        # self.original_crop_annapurna = { # for data taken before you made the changes in the RGB button 
+        #     'ch1': 0, 
+        #     'ch2': 682, 
+        #     'ch3': 1365,
+        # }
+
         self.original_crop_annapurna = {
             'ch1': 0, 
             'ch2': 680, 
@@ -33,14 +40,22 @@ class RegistrationSettings:
             '488nm': (1370, 1370 + self.ch_width_annapurna),
             '405nm': (1370, 1370 + self.ch_width_annapurna),
         }
+
+        #K2
         
         self.original_crop_K2 = {
             'ch1': 6, 
             'ch2': 685, 
             'ch3': 1365,
         }
-        
-       #K2
+
+        # self.original_crop_annapurna = { # for data taken before you made the changes in the RGB button 
+        #     'ch1': 0, 
+        #     'ch2': 682, 
+        #     'ch3': 1365,
+        # }
+
+
         self.ch_width_K2 = 638   
         self.x_coords_K2 = { #K2
             '638nm': (21, 21 + self.ch_width_K2),  
