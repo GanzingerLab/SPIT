@@ -39,7 +39,7 @@ from spit import table as table
 from spit import plot_diffusion
 from spit import colocalize as coloc
 from spit import plot_coloc
-
+from pathlib import Path
 import os
 import numpy as np
 
@@ -172,16 +172,21 @@ class SPIT_Run:
             shutil.copy(result_file, self.image_folder)
             shutil.copy(datalog_file, self.image_folder)
         #check whether Annapurna or K2 TIRF microscope were used and initialize the neceesary variables depening on that
+
         if result_txt['Computer'] == 'ANNAPURNA': 
             x_coords = self.settings.registration_settings.x_coords_annapurna
             Hl  = self.settings.load_H_left_annapurna()
             Hr = self.settings.load_H_right_annapurna()
             xlim, ylim = self.settings.load_crop_annapurna()
+            width_crop  = self.settings.registration_settings.width_crop
+            original_crop = self.settings.registration_settings.original_crop_annapurna
         elif result_txt['Computer'] == 'K2-BIVOUAC':
             x_coords = self.settings.registration_settings.x_coords_K2
             Hl  = self.settings.load_H_left_K2()
             Hr = self.settings.load_H_right_K2()
             xlim, ylim = self.settings.load_crop_K2()
+            width_crop  = self.settings.registration_settings.width_crop
+            original_crop = self.settings.registration_settings.original_crop_K2
         #check the imaging mode used: sequence or record (a.k.a VCR). 
         if result_txt['Mode'] == 'Sequence': #if you used sequence for that run
             pattern = tools.get_pattern(result_txt) #get the specific patterns that you used.
@@ -205,11 +210,49 @@ class SPIT_Run:
                         _yaml.dump_all(inf, file, default_flow_style=False)
                     save = os.path.join(self.image_folder, f"{pat}_{ch}.tif") #save the image as .tif
                     imageio.mimwrite(save, cropped_im)    
+
         elif result_txt['Mode'] == 'VCR': #if you used record for that run
             pattern = tools.get_VCR_pattern(result_txt) #get the lasers that you used. 
             file_name = self.folder+'\\' +self.folder.split("\\")[-1]+'_'+'record'+'.raw'#open the raw file
-            d, inf = tools.load_raw(file_name)
+            image, inf = tools.load_raw(file_name)
             self.split_ch = {}
+            d = np.zeros([len(image), image.shape[1], 2048 ], dtype=np.uint16)
+            camera_channels = [ch.strip() for ch in result_txt['Camera Channels'].split(',')] if 'Camera Channels' in result_txt else []
+            
+            if not camera_channels: # extract camera channels from the readout - only for old data where 
+                                    #we know the crop coordinates were 0, 682 and 1365 (now we have changed them, as specified in
+                                    #the settings in the example script. This is only a fallback to be able to use older data
+                if image.shape[2] == 2048: 
+                    camera_channels = ['ch1', 'ch2', 'ch3']
+                else:
+                    readout = result_txt['Readout'].split(':')[1].split('@')
+                    size = readout[0].strip()
+                    start = readout[1].strip()
+                    size = int(size.split('x')[0])
+                    start = int(start.split(',')[0])
+                    if start == 0: 
+                        camera_channels = ['ch1']
+                        if size == 1344: 
+                            camera_channels.append('ch2')
+                    elif start == 682:
+                        camera_channels = ['ch2']
+                        if size == 1344: 
+                            camera_channels.append('ch3')
+                    elif start == 1365: 
+                        camera_channels = ['ch3']
+                    camera_channels = sorted(camera_channels, key=lambda x: int(x.strip('ch'))) # sort the camera channels based on the number after 'ch'
+
+            w = width_crop[len(camera_channels)]
+            loc = original_crop[camera_channels[0].strip()] if len(camera_channels) < 3 else 0
+            d[:, :, loc:loc+w] = image
+            if 'ch1' not in camera_channels:
+                pattern['638nm']  = False
+            if 'ch2' not in camera_channels:
+                pattern['561nm']  = False
+            if 'ch3' not in camera_channels: 
+                pattern['488nm']  = False
+                pattern['405nm']  = False
+
             for ch, presence in pattern.items(): #for each laser used
                 if presence: 
                     image = d[to_keep[0]:to_keep[1], verticalROI[0]:verticalROI[1], x_coords[ch][0]:x_coords[ch][1]] #crop the specific channel
@@ -251,127 +294,127 @@ class SPIT_Run:
         Exception
             If a TIFF file cannot be processed or contains no valid frames.
         """
-        try:
-            transformInfo = 'False' 
-            #Actually not needed, because you can only add folders, based on a function in def main, left in case it needs to be compared with older versions: 
-            if os.path.isdir(self.image_folder): 
-               print('Analyzing directory', self.image_folder)
-               pathsTif = glob(self.image_folder + '/*.tif', recursive=True)
-               paths = pathsTif
-            # subdirectories = list({os.path.dirname(file_path) for file_path in paths})
-               print(f'A total of {len(paths)} files detected...')
-               print('--------------------------------------------------------')
-            else:
-                print(f'{self.folder} is not a folder')
-                
-            # If any of the folders does not contain tif or raw images, it will be skipped and the folder will be saved in the following list:
-            skippedPaths = []  
-            
-            if paths: 
-                movieList = []
-                filelist = []
-                self.locs = {}
-                for i, path in enumerate(paths):
-                    # print(path)
-                    if self.settings.localization_settings.skip in path or 'cluster_analysis' in path:
-                        skippedPaths.append(path)
-                        continue
-                    
-                    filelist.append(path)
-                    movie, info = load_movie(path)
-                    movieList.append(movie)
-                    area = info[0]['Width']*info[0]['Height']*self.settings.get_px2um(path)*self.settings.get_px2um(path)
-                    gradient = self.settings.gradient(path)
-                    print(f'Localizing file {path}')
-                    print('--------------------------------------------------------')
-                    print('gradient:', self.settings.gradient(path))
-                    
-                    #Localize spots in the images based on the chosen fit-method and settings
-                    current, futures = identify_async(movie, gradient, self.settings.localization_settings.box)
-                    ids = identifications_from_futures(futures)     
-                    box = self.settings.localization_settings.box
-                    camera_info = self.settings.localization_settings.camera_info
-                    if self.settings.localization_settings.fit_method == 'lq':
-                        spots = get_spots(movie, ids, box, camera_info)
-                        theta = gausslq.fit_spots_parallel(spots, asynch=False)
-                        locs = gausslq.locs_from_fits(ids, theta, box, camera_info['Gain'])
-                    elif self.settings.localization_settings.fit_method == 'com':
-                        spots = get_spots(movie, ids, box,camera_info)
-                        theta = avgroi.fit_spots_parallel(spots, asynch=False)
-                        locs = avgroi.locs_from_fits(ids, theta, box, camera_info['Gain'])
-                    else:
-                        print('This should never happen... Please, set a proper method: com for moving particles, lq for moving stuff')
-                    #save the localizations in a dataframe        
-                    df_locs = pd.DataFrame(locs)
-                    # Compatibility with Swift
-                    df_locs = df_locs.rename(columns={'frame': 't', 'photons': 'intensity'})
-        
-                    # adding localization precision, nearest neighbor, change photons, add cell_id column
-                    df_locs['loc_precision'] = df_locs[['lpx', 'lpy']].mean(axis=1)
-                    df_locs['nearest_neighbor'] = localize.get_nearest_neighbor(df_locs)
-                    df_locs['cell_id'] = 0
-    
-                    # Non-affine correction only makes sense if we are dealing with two/three channel data. If you do not have these or want to update them, 
-                    #use get_non-affine_coefs.py. 
-                    if self.settings.localization_settings.transform:
-                        #open non-affine coefficients. 
-                        naclibCoefficients = self.settings.get_naclib(path)
-                        #transform localizations based on the coefficients assigned to channel 2 (488nm or 405nm channel)
-                        if '488nm' in path or '405nm' in path:
-                            df_locs, dataset = localize.transform_locs(df_locs,
-                                                                       naclibCoefficients,
-                                                                       channel=2,
-                                                                       fig_size=list(movie[0].shape[::-1]))
-                            transformInfo = 'true, based on '+str(dataset)
-                       #transform localizations based on the coefficients assigned to channel 0 (638nm channel)
-                        elif '638nm' in path:
-                            df_locs, dataset = localize.transform_locs(df_locs,
-                                                                       naclibCoefficients,
-                                                                       channel=0,
-                                                                       fig_size=list(movie[0].shape[::-1]))
-                            transformInfo = 'true, based on '+str(dataset)
-                        #do not modify 531nm channel, since it is the reference channel.
-                        else:
-                            transformInfo = 'false, reference channel'
-                   #update info (.yaml)            
-                    localize_info = {
-                        'Generated by': 'Picasso Localize',
-                        'Box Size': self.settings.localization_settings.box,
-                        'Min. Net Gradient': gradient,
-                        'Color correction': transformInfo,
-                        'Area': float(area),
-                        'Fit method': self.settings.localization_settings.fit_method
-                    }
-                    info[0]["Byte Order"] = "<" #I manually checked with https://hexed.it/ that the tif files are still saved as little-endian
-                    infoNew = info.copy()
-                    infoNew.append(localize_info)
-                    #get saving folder
-                    base, ext = os.path.splitext(path)
-         
-                    pathChannel = base
-        
-                    pathOutput = pathChannel + self.settings.localization_settings.suffix + '_locs.csv'
-                    #save localizations and ifnromation
-                    df_locs.to_csv(pathOutput, index=False)
-                    save_info(os.path.splitext(pathOutput)[0]+'.yaml', infoNew)
-                    ch = pathOutput.split('\\')[-1].split('_')[-2]
-                    self.locs[ch] = df_locs
-                    
-                    #plot, if asked for, the summary plots 
-                    if self.settings.localization_settings.plot:
-                        plotPath = tools.getOutputpath(
-                            pathOutput, 'plots', keepFilename=True)
-                        localize.plot_loc_stats(df_locs, plotPath)
-    
-                   
-                    print(f'File saved to {pathOutput}')
-                    print('                                                        ')
-                 
-        except:
-            # "There are no files in this subfolder, rise error"
-            skippedPaths.append(self.folder)
-            print('Skipping...\n')
+        # try:
+        transformInfo = 'False' 
+        #Actually not needed, because you can only add folders, based on a function in def main, left in case it needs to be compared with older versions: 
+        if os.path.isdir(self.image_folder): 
+            print('Analyzing directory', self.image_folder)
+            pathsTif = glob(self.image_folder + '/*.tif', recursive=True)
+            paths = pathsTif
+        # subdirectories = list({os.path.dirname(file_path) for file_path in paths})
+            print(f'A total of {len(paths)} files detected...')
             print('--------------------------------------------------------')
+        else:
+            print(f'{self.folder} is not a folder')
+            
+        # If any of the folders does not contain tif or raw images, it will be skipped and the folder will be saved in the following list:
+        skippedPaths = []  
+        
+        if paths: 
+            movieList = []
+            filelist = []
+            self.locs = {}
+            for i, path in enumerate(paths):
+                # print(path)
+                if self.settings.localization_settings.skip in path or 'cluster_analysis' in path:
+                    skippedPaths.append(path)
+                    continue
+                
+                filelist.append(path)
+                movie, info = load_movie(path)
+                movieList.append(movie)
+                area = info[0]['Width']*info[0]['Height']*self.settings.get_px2um(path)*self.settings.get_px2um(path)
+                gradient = self.settings.gradient(path)
+                print(f'Localizing file {path}')
+                print('--------------------------------------------------------')
+                print('gradient:', self.settings.gradient(path))
+                
+                #Localize spots in the images based on the chosen fit-method and settings
+                current, futures = identify_async(movie, gradient, self.settings.localization_settings.box)
+                ids = identifications_from_futures(futures)     
+                box = self.settings.localization_settings.box
+                camera_info = self.settings.localization_settings.camera_info
+                if self.settings.localization_settings.fit_method == 'lq':
+                    spots = get_spots(movie, ids, box, camera_info)
+                    theta = gausslq.fit_spots_parallel(spots, asynch=False)
+                    locs = gausslq.locs_from_fits(ids, theta, box, camera_info['Gain'])
+                elif self.settings.localization_settings.fit_method == 'com':
+                    spots = get_spots(movie, ids, box,camera_info)
+                    theta = avgroi.fit_spots_parallel(spots, asynch=False)
+                    locs = avgroi.locs_from_fits(ids, theta, box, camera_info['Gain'])
+                else:
+                    print('This should never happen... Please, set a proper method: com for moving particles, lq for moving stuff')
+                #save the localizations in a dataframe        
+                df_locs = pd.DataFrame(locs)
+                # Compatibility with Swift
+                df_locs = df_locs.rename(columns={'frame': 't', 'photons': 'intensity'})
+    
+                # adding localization precision, nearest neighbor, change photons, add cell_id column
+                df_locs['loc_precision'] = df_locs[['lpx', 'lpy']].mean(axis=1)
+                df_locs['nearest_neighbor'] = localize.get_nearest_neighbor(df_locs)
+                df_locs['cell_id'] = 0
+
+                # Non-affine correction only makes sense if we are dealing with two/three channel data. If you do not have these or want to update them, 
+                #use get_non-affine_coefs.py. 
+                if self.settings.localization_settings.transform:
+                    #open non-affine coefficients. 
+                    naclibCoefficients = self.settings.get_naclib(path)
+                    #transform localizations based on the coefficients assigned to channel 2 (488nm or 405nm channel)
+                    if '488nm' in path or '405nm' in path:
+                        df_locs, dataset = localize.transform_locs(df_locs,
+                                                                    naclibCoefficients,
+                                                                    channel=2,
+                                                                    fig_size=list(movie[0].shape[::-1]))
+                        transformInfo = 'true, based on '+str(dataset)
+                    #transform localizations based on the coefficients assigned to channel 0 (638nm channel)
+                    elif '638nm' in path:
+                        df_locs, dataset = localize.transform_locs(df_locs,
+                                                                    naclibCoefficients,
+                                                                    channel=0,
+                                                                    fig_size=list(movie[0].shape[::-1]))
+                        transformInfo = 'true, based on '+str(dataset)
+                    #do not modify 531nm channel, since it is the reference channel.
+                    else:
+                        transformInfo = 'false, reference channel'
+                #update info (.yaml)            
+                localize_info = {
+                    'Generated by': 'Picasso Localize',
+                    'Box Size': self.settings.localization_settings.box,
+                    'Min. Net Gradient': gradient,
+                    'Color correction': transformInfo,
+                    'Area': float(area),
+                    'Fit method': self.settings.localization_settings.fit_method
+                }
+                info[0]["Byte Order"] = "<" #I manually checked with https://hexed.it/ that the tif files are still saved as little-endian
+                infoNew = info.copy()
+                infoNew.append(localize_info)
+                #get saving folder
+                base, ext = os.path.splitext(path)
+        
+                pathChannel = base
+    
+                pathOutput = pathChannel + self.settings.localization_settings.suffix + '_locs.csv'
+                #save localizations and ifnromation
+                df_locs.to_csv(pathOutput, index=False)
+                save_info(os.path.splitext(pathOutput)[0]+'.yaml', infoNew)
+                ch = pathOutput.split('\\')[-1].split('_')[-2]
+                self.locs[ch] = df_locs
+                
+                #plot, if asked for, the summary plots 
+                if self.settings.localization_settings.plot:
+                    plotPath = tools.getOutputpath(
+                        pathOutput, 'plots', keepFilename=True)
+                    localize.plot_loc_stats(df_locs, plotPath)
+
+                
+                print(f'File saved to {pathOutput}')
+                print('                                                        ')
+                 
+        # except:
+        #     # "There are no files in this subfolder, rise error"
+        #     skippedPaths.append(self.folder)
+        #     print('Skipping...\n')
+        #     print('--------------------------------------------------------')
     def roi(self):
         """
         Restrict localizations to user-defined ROIs.
@@ -491,7 +534,7 @@ class SPIT_Run:
             If linking fails or if no valid trajectories are found.
         """
         try:
-            if os.path.isdir(self.image_folder):
+            if os.path.isdir(Path(self.image_folder)):
                 if self.settings.link_settings.coloc:
                     paths = glob(self.image_folder + '/*colocs.csv', recursive=True)
                 else:
@@ -549,9 +592,9 @@ class SPIT_Run:
                         roi_width = 100
                         if not roi_boolean:  # avoiding clash with ROIs-only limit frames
                             df_locs = df_locs[(df_locs.x > (img_size/2-roi_width))
-                                              & (df_locs.x < (img_size/2+roi_width))]
+                                                & (df_locs.x < (img_size/2+roi_width))]
                             df_locs = df_locs[(df_locs.y > (img_size/2-roi_width))
-                                              & (df_locs.y < (img_size/2+roi_width))]
+                                                & (df_locs.y < (img_size/2+roi_width))]
                         df_locs = df_locs[df_locs.t <= 500]
                         quick = '_quick'
                     else:
@@ -637,9 +680,9 @@ class SPIT_Run:
             
                     print('Calculating and plotting particle-wise diffusion analysis...\n')
                     df_stats = link.get_particle_stats(df_tracks,
-                                                       dt=dt,
-                                                       particle='track.id',
-                                                       t='t')
+                                                        dt=dt,
+                                                        particle='track.id',
+                                                        t='t')
             
             #         # adding ROI stats to track stat file
                     if roi_boolean:
@@ -668,7 +711,7 @@ class SPIT_Run:
                     skippedPaths.append(path)
                     continue
         except Exception as e:
-            print('Error')
+            print('Error', e)
         print('--------------------------------------------------------')
         print('/////////////////////FINISHED//////////////////////////')
         print('--------------------------------------------------------')
