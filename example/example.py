@@ -5,7 +5,7 @@ Created on Mon Jul 28 13:40:42 2025
 
 @author: castrolinares
 """
-from spit import settings 
+from spit.settings import Settings 
 from spit.SPIT import SPIT_Run, SPIT_Dataset, localize_tiff_run, localize_tiff_dataset
 
 class RegistrationSettings:
