@@ -210,7 +210,7 @@ def plot_iteration(data, path):
 # %% MSDs
 
 
-def plot_msd(df_stats, dt, path=None, plot_loglog=True, ax=None):
+def plot_msd(df_stats, dt, path=None, plot_loglog=True, ax=None, s = False):
     """
     Plot individual MSDs and the fit of the median MSD value. 
     Displays weighted median of the diffusion constant.
@@ -291,22 +291,23 @@ def plot_msd(df_stats, dt, path=None, plot_loglog=True, ax=None):
     D_msd_median_w = np.average(
         df_stats.D_msd, weights=df_stats.loc_count)  # weighted median
     # D_msd_median = df_tracks.D_msd.quantile(q=0.5)
-    pd.concat([
-    pd.DataFrame({
-        'track_id': i,
-        'lag_time_s': row.lagtimes * dt,
-        'msd_um2': row.msd * nm2um**2
-    })
-    for i, row in enumerate(df_stats.itertuples())
-    ]).to_csv(path + '_msd_raw_data.csv', index=False)
+    if s:
+        pd.concat([
+        pd.DataFrame({
+            'track_id': i,
+            'lag_time_s': row.lagtimes * dt,
+            'msd_um2': row.msd * nm2um**2
+        })
+        for i, row in enumerate(df_stats.itertuples())
+        ]).to_csv(path + '_MSD-lag-raw.csv', index=False)
 
-    pd.DataFrame({
-        'lag_time_s': msd_fit_x * dt,
-        'msd_q025_um2': y_fit_q025 * nm2um**2,
-        'msd_q05_um2': y_fit_q05 * nm2um**2,
-        'msd_q075_um2': y_fit_q075 * nm2um**2,
-        'D_msd_weighted_um2_s': D_msd_median_w
-    }).to_csv(path + '_msd_fit_data.csv', index=False)
+        pd.DataFrame({
+            'lag_time_s': msd_fit_x * dt,
+            'msd_q025_um2': y_fit_q025 * nm2um**2,
+            'msd_q05_um2': y_fit_q05 * nm2um**2,
+            'msd_q075_um2': y_fit_q075 * nm2um**2,
+            'D_msd_weighted_um2_s': D_msd_median_w
+        }).to_csv(path + '_MSD-lag-fit.csv', index=False)
     
     ax.text(0.05, 0.95, s=rf'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
             ha='left', va='top', color='k', transform=ax.transAxes,
@@ -331,7 +332,7 @@ def plot_msd(df_stats, dt, path=None, plot_loglog=True, ax=None):
 # %% D_msd Histogram
 
 
-def plot_Dmsd(df_stats, dt, path=None, ax=None, color='black', split=False):
+def plot_Dmsd(df_stats, dt, path=None, ax=None, color='black', split=False, s = False):
     """
     Plot histogram of diffusion coefficient distribution based on MSD of individual trajectories.
 
@@ -374,12 +375,12 @@ def plot_Dmsd(df_stats, dt, path=None, ax=None, color='black', split=False):
             )
 
     D_msd_median_w = np.average(df_stats.D_msd, weights=df_stats.loc_count)
-
-    pd.DataFrame({
-    'D_msd_um2_s': df_stats.D_msd,
-    'weight_loc_count': df_stats.loc_count,
-    'D_msd_weighted_mean_um2_s': D_msd_median_w
-    }).to_csv(path + '_D_msd_data.csv', index=False)
+    if s:
+        pd.DataFrame({
+        'D_msd_um2_s': df_stats.D_msd,
+        'weight_loc_count': df_stats.loc_count,
+        'D_msd_weighted_mean_um2_s': D_msd_median_w
+        }).to_csv(path + '_tracks-Dmsd.csv', index=False)
 
     if not split:
         ax.text(0.95, 0.95, s=rf'D_MSD = {D_msd_median_w:.2f} $\mu m^2/s$',
@@ -471,7 +472,7 @@ def plot_Dmsd_seg(df_tracks, dt, path=None, ax=None):
 
 
 # %% Jump distance
-def plot_jd(df_stats, dt, path=None, ax=None):
+def plot_jd(df_stats, dt, path=None, ax=None, s= False):
     """
     Plot histogram of jump distribution for all particles. 
 
@@ -520,22 +521,22 @@ def plot_jd(df_stats, dt, path=None, ax=None):
     for x in exp_x:
         f = tools.pdf_jd_sub(x, dt, pars[2], pars[3])
         exp_freq_sub2.append(f)
+    if s:
+        pd.DataFrame({
+        'jump_distance_um': jd_all
+        }).to_csv(path + '_jumps_hist_raw.csv', index=False)
 
-    pd.DataFrame({
-    'jump_distance_um': jd_all
-    }).to_csv(path + '_jd_raw_data.csv', index=False)
-
-    pd.DataFrame({
-        'exp_x_um': exp_x,
-        'exp_freq': exp_freq,
-        'exp_freq_immobile': exp_freq_sub1,
-        'exp_freq_mobile': exp_freq_sub2,
-        'D_jd0': pars[0],
-        'A_jd0': pars[1],
-        'D_jd1': pars[2],
-        'A_jd1': pars[3],
-        'dt_s': dt
-    }).to_csv(path + '_jd_fit_data.csv', index=False)
+        pd.DataFrame({
+            'exp_x_um': exp_x,
+            'exp_freq': exp_freq,
+            'exp_freq_immobile': exp_freq_sub1,
+            'exp_freq_mobile': exp_freq_sub2,
+            'D_jd0': pars[0],
+            'A_jd0': pars[1],
+            'D_jd1': pars[2],
+            'A_jd1': pars[3],
+            'dt_s': dt
+        }).to_csv(path + '_jumps_hist_fit.csv', index=False)
     
     ax.hist(jd_all,
             bins='fd',
@@ -651,7 +652,7 @@ def plot_tracks_filtered(df_tracks, df_tracksF, df_stats, path=None, px2nm=108, 
 # %% Loc/Track per frame
 
 
-def plot_x_per_frame(df, data_type, dt, path=None, roll_param=10, ignore_start=0, color='black', split=False, ax=None):
+def plot_x_per_frame(df, data_type, dt, path=None, roll_param=10, ignore_start=0, color='black', split=False, ax=None, s = False):
     '''
     '''
     # Prepare data (locs use 'frame' column, linked use 't' column)
@@ -669,16 +670,16 @@ def plot_x_per_frame(df, data_type, dt, path=None, roll_param=10, ignore_start=0
     x_fit = np.arange(0, data_per_frame.size*10, 1)
     y_fit = tools.exp_single(x_fit, *popt)
 
-    pd.DataFrame({
-    'frame': data_per_frame.index,
-    'time_s': data_per_frame.index * dt,
-    'normalized_count': data_per_frame.values,
-    'rolling_mean': data_per_frame.rolling(roll_param).mean().values,
-    'fit_value': tools.exp_single(data_per_frame.index, *popt),
-    'fit_param_0': popt[0],
-    'tau_bleach': popt[1],
-    'fit_param_2': popt[2]
-        }).to_csv(path + f'_{data_type}_per_frame_data.csv', index=False)
+    if s:
+        pd.DataFrame({
+        'frame': data_per_frame.index,
+        'time_s': data_per_frame.index * dt,
+        'normalized_count': data_per_frame.values,
+        'rolling_mean': data_per_frame.rolling(roll_param).mean().values,
+        'fit_value': tools.exp_single(data_per_frame.index, *popt),
+        'fit_param_0': popt[0],
+        'tau_bleach': popt[1],
+            }).to_csv(path + f'_{data_type}_tracks-per-frame.csv', index=False)
 
 
     # Plot
@@ -724,17 +725,17 @@ def plot_x_per_frame(df, data_type, dt, path=None, roll_param=10, ignore_start=0
 # %% NgT
 
 
-def plot_NgT(df_tracks, dt, path=None, color='black', split=False, ax=None):
+def plot_NgT(df_tracks, dt, path=None, color='black', split=False, ax=None, s= False):
     '''
     '''
     Ts, NgT = link.tracks_greaterT(df_tracks, dt)
     Tcrit = Ts[np.argmax(NgT < 0.5)]
-
-    pd.DataFrame({
-    'T_s': Ts,
-    'NgT': NgT,
-    'Tcrit_s': Tcrit
-        }).to_csv(path + '_NgT_data.csv', index=False)
+    if s:
+        pd.DataFrame({
+        'T_s': Ts,
+        'NgT': NgT,
+        'Tcrit_s': Tcrit
+            }).to_csv(path + '_TPP-t.csv', index=False)
     # max_time = dt*linked.frame.max()
 
     # Plot
@@ -769,7 +770,7 @@ def plot_NgT(df_tracks, dt, path=None, color='black', split=False, ax=None):
 
     if save_plot:
         plt.tight_layout()
-        plt.savefig(path+'_NgT.png', dpi=200)
+        plt.savefig(path+'_TPP.png', dpi=200)
 
     return Tcrit
 
@@ -778,7 +779,7 @@ def plot_NgT(df_tracks, dt, path=None, color='black', split=False, ax=None):
 # %% Track length weighted histogram
 
 
-def plot_track_lengths(df_stats, dt, path=None, color='black', split=False, ax=None, weighted=True):
+def plot_track_lengths(df_stats, dt, path=None, color='black', split=False, ax=None, weighted=True, s = False):
     # Plot
     save_plot = False
     if ax is None:
@@ -813,12 +814,12 @@ def plot_track_lengths(df_stats, dt, path=None, color='black', split=False, ax=N
                 histtype='step',
                 zorder=100)
         # ax.set_yscale('log')
-    
-    pd.DataFrame({
-    'track_duration_s': df_stats.length * dt,
-    'average_duration_s': average_length * dt,
-    'weighted': weighted
-    }).to_csv(path + 'track_lengths_data.csv', index=False)
+    if s:
+        pd.DataFrame({
+        'track_duration_s': df_stats.length * dt,
+        'average_duration_s': average_length * dt,
+        'weighted': weighted
+        }).to_csv(path + 'track_lengths_data.csv', index=False)
 
     if not split:
         ax.text(0.95, 0.95, s=f'Duration = {average_length*dt:.1f} s',
@@ -865,7 +866,7 @@ def plot_loc_stats(df_locs, path, dt=None):
     plot_localization_precision(df_locs, ax=ax1)
     plot_nearest_neighbor(df_locs, ax=ax2)
     tau_bleach = plot_x_per_frame(df_locs, 'Localizations',
-                                  dt, roll_param=10, ignore_start=0, split=False, ax=ax3)
+                                  dt, roll_param=10, ignore_start=0, split=False, ax=ax3, path = path)
 
     f.suptitle(os.path.split(path)[1])
     plt.tight_layout()
@@ -877,7 +878,7 @@ def plot_loc_stats(df_locs, path, dt=None):
 # %% WRAPPER: Tracking stats
 
 
-def plot_track_stats(df_tracks, df_stats, df_statsF, path, px2nm, dt=None):
+def plot_track_stats(df_tracks, df_stats, df_statsF, path, px2nm, dt=None, save_CSV = False):
     keep_particles = df_statsF['track.id'].values
     df_tracksF = df_tracks.loc[df_tracks['track.id'].isin(keep_particles)]
 
@@ -903,28 +904,25 @@ def plot_track_stats(df_tracks, df_stats, df_statsF, path, px2nm, dt=None):
                                  ignore_start=0,
                                  color=colorC,
                                  split=True,
-                                 ax=axs[0, 0])
-                
+                                 ax=axs[0, 0], path = path)
                 plot_track_lengths(df_statsF_roi,
                                    dt,
                                    color=colorC,
                                    split=True,
-                                   ax=axs[0, 1])
-    
+                                   ax=axs[0, 1], path = path)
                 plot_NgT(df_tracksF_roi,
                          dt,
                          color=colorC,
                          split=True,
-                         ax=axs[0, 2],)
+                         ax=axs[0, 2], path = path)
 
         axs[0, 2].legend([f'roi {x}' for x in nROI], loc='lower right')
-
-    plot_x_per_frame(df_tracksF, 'Tracks', dt, roll_param=10, ignore_start=0,ax=axs[0, 0])  # should be the filtered ones
-    plot_track_lengths(df_statsF, dt, ax=axs[0, 1])
-    plot_NgT(df_tracksF, dt, ax=axs[0, 2])
-    plot_jd(df_stats, dt, ax=axs[1, 0])
-    plot_msd(df_statsF, dt, plot_loglog=True, ax=axs[1, 1])
-    plot_Dmsd(df_statsF, dt, ax=axs[1, 2])
+    plot_x_per_frame(df_tracksF, 'Tracks', dt, roll_param=10, ignore_start=0,ax=axs[0, 0], path = path, s = save_CSV)  # should be the filtered ones
+    plot_track_lengths(df_statsF, dt, ax=axs[0, 1], path = path, s = save_CSV)
+    plot_NgT(df_tracksF, dt, ax=axs[0, 2], path = path, s = save_CSV)
+    plot_jd(df_stats, dt, ax=axs[1, 0], path = path, s = save_CSV)
+    plot_msd(df_statsF, dt, plot_loglog=True, ax=axs[1, 1], path = path, s = save_CSV)
+    plot_Dmsd(df_statsF, dt, ax=axs[1, 2], path  = path, s = save_CSV)
     f.suptitle(os.path.split(path)[1])
     # f.suptitle(f'{os.path.split(path)[1]}\n filtered: loc_count>{filter_length}, D_msd>{filter_D}')
     plt.tight_layout()

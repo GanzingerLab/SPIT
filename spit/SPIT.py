@@ -704,10 +704,10 @@ class SPIT_Run:
                 # Filter short tracks and immobile particles
                     if not self.settings.link_settings.coloc:
                         df_statsF = link.filter_df(df_stats, filter_length=self.settings.link_settings.fil_len, filter_D=self.settings.link_settings.fil_diff)
-                        plot_diffusion.plot_track_stats(df_tracks, df_stats, df_statsF, path_plots, dt=dt, px2nm = px2nm)
+                        print(self.settings.link_settings.save_CSV)
+                        plot_diffusion.plot_track_stats(df_tracks, df_stats, df_statsF, path_plots, dt=dt, px2nm = px2nm, save_CSV = self.settings.link_settings.save_CSV)
                 except Exception as e:
                     print(f"Error processing {path}: {e}")
-                    print('I do not think you have many tracks... OR self.search is too large')
                     skippedPaths.append(path)
                     continue
         except Exception as e:

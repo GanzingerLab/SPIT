@@ -1,16 +1,10 @@
 #%%
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jul 28 13:40:42 2025
-
-@author: castrolinares
-"""
 from spit.settings import Settings 
 from spit.SPIT import SPIT_Run, SPIT_Dataset, localize_tiff_run, localize_tiff_dataset
 
 class RegistrationSettings:
     def __init__(self):
-        self.registration_folder = r'C:\Users\castrolinares\Data analysis\SPIT_G\Raquel_6Feb2024\regis' #Folder containing the H-matrices and crop coordinates needed for the alignment of the channels
+        self.registration_folder = r'C:\Users\castrolinares\Data analysis\SPIT_G\SPIT_git\SPIT\spit\paramfiles' #Folder containing the H-matrices and crop coordinates needed for the alignment of the channels
         self.verticalROI = [0, 1100] #Specify the heigth of the channels that you want to use. I am pretty sure that if we set it larger, it still does it correctly. 
         self.to_keep = [0, None] #number of frames to procees. 
         #[0, None] means all frames, if you want to change it, set the specific number ([0:200] would be the first 200 frames 
@@ -101,11 +95,11 @@ class RegistrationSettings:
     
 class LocalizationSettings:
     def __init__(self):
-        self.box = 11 #same as in picasso localize
+        self.box = 7 #same as in picasso localize
         self.gradient405 = 300 #same as in picasso localize
         self.gradient488 = 1053 #same as in picasso localize
-        self.gradient561 = 500 #same as in picasso localize
-        self.gradient638 = 4534 #same as in picasso localize
+        self.gradient561 = 1200 #same as in picasso localize
+        self.gradient638 = 1400 #same as in picasso localize
         
         #####USED ONLY FOR AFFINE TRANSFORM OF TIFF FILES#####
         self.gradient_l = 500    #same as in picasso localize
@@ -122,10 +116,10 @@ class LocalizationSettings:
             'qe': 0.9  #In Picasso qe (quantum efficiency) is not used anymore. It is left for bacward compatibility. 
         }
         
-        self.skip = ''
+        self.skip = 'FALSE_STRING' 
         self.suffix = '' #sufix for the name of the file, if necessary.
         self.transform = False #Do non-affine corrections of the localized spots if you have multiple channels.
-        self.plot = True 
+        self.plot = False 
 
 class LinkSettings:
     def __init__(self):
@@ -136,10 +130,12 @@ class LinkSettings:
         self.suffix = '' #sufix for the name of the file, if necessary. 
         self.fil_len = 3 #filter the length of the tracks. Tracks shorter than this ammount of frames will be filtered
         self.fil_diff = 0.0002 #Filter for immobile particles. Tracks with a diffusion coefficient smaller than this number will be filtered
+        self.save_CSV = False
         self.tracker = 'trackpy' #Tracker algorithm to use: trackpy or swift. After talking with Chris, swift is very complicated and the focus of the developers is not 
         # really tracking, but diffusion rates. So, swift is not implemented, and I am not sure if it will. 
-        self.memory = 0 #max number of frames from which a particle can disappear 
-        self.search = 5 #max search range for trackpy linking in px 
+        self.memory = 1 #max number of frames from which a particle can disappear 
+        self.search = 3 #max search range for trackpy linking in px 
+
 
 class ColocTracksSettings:
     def __init__(self):
@@ -269,7 +265,9 @@ if __name__ == "__main__":
 
 #%%
 if __name__ == "__main__":
-    test4 = SPIT_Dataset(r'D:\Data\20251215_T6_mutants', settings)
+    test4 = SPIT_Dataset(r'D:\Data\20260528_GCL0035_DNA_PAINT5', settings)
     # test4.affine_transform()
-    test4.link()
+    # test4.localize()
+    # test4.link()
     # test4.roi()
+    test4.coloc_tracks()
