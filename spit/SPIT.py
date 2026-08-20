@@ -439,7 +439,7 @@ class SPIT_Run:
         print(self.image_folder)
         if os.path.isdir(self.image_folder):
             print('Analyzing directory...')
-            paths = glob(self.image_folder + '/*nm_locs.csv')
+            paths = glob(self.image_folder + '/*_locs.csv')
 
         # initialize placeholders
         skippedPaths = []
@@ -1499,7 +1499,7 @@ class localize_tiff_run:
         # format filepaths
         if os.path.isdir(self.image_folder):
             print('Analyzing directory...')
-            paths = glob(self.image_folder + '/*ch_locs.csv')
+            paths = glob(self.image_folder + '/*_locs.csv')
 
         # initialize placeholders
         skippedPaths = []
